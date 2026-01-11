@@ -78,7 +78,7 @@ class SnowEvent:
     def __repr__(self):
         return (f"SnowEvent(start={self.start_time.strftime('%Y-%m-%d %H:%M')}, "
                 f"end={self.end_time.strftime('%Y-%m-%d %H:%M')}, "
-                f"accumulation={self.accumulation:.2f}\", temp={self.temp:.1f}°F)")
+                f"accumulation={self.accumulation:.2f} inches, temp={self.temp:.1f}°F)")
 
 
 class SnowAnalyzer:

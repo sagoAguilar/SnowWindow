@@ -172,7 +172,6 @@ preferences:
 
 - `requests` - HTTP library for API calls
 - `pyyaml` - YAML configuration parsing
-- `python-dateutil` - Date/time utilities
 
 ## Project Structure
 
