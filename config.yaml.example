@@ -1,0 +1,38 @@
+# SnowWindow Configuration File
+# Copy this file to config.yaml and fill in your details
+
+# Your location for weather data
+location:
+  city: "Minneapolis"
+  state: "MN"
+  country: "US"
+  # Alternative: use latitude and longitude
+  # latitude: 44.9778
+  # longitude: -93.2650
+
+# OpenWeatherMap API key (get free key at https://openweathermap.org/api)
+api_key: "YOUR_API_KEY_HERE"
+
+# Snow shoveling preferences
+preferences:
+  # Minimum snow accumulation (in inches) before you need to shovel
+  min_snow_threshold: 2.0
+  
+  # Maximum snow accumulation (in inches) before it becomes urgent
+  urgent_threshold: 6.0
+  
+  # Your preferred shoveling time windows (24-hour format)
+  preferred_times:
+    - start: "07:00"
+      end: "09:00"
+      label: "Morning"
+    - start: "16:00"
+      end: "18:00"
+      label: "Evening"
+  
+  # How many hours ahead to look for snow events
+  forecast_hours: 48
+  
+  # Temperature threshold (F) - shoveling is easier when it's not too cold
+  comfortable_temp_min: 20
+  comfortable_temp_max: 35
