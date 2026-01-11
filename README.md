@@ -45,6 +45,15 @@ SnowWindow is an intelligent application that helps you decide when to shovel sn
    - Configure snow thresholds
    - Define your preferred shoveling time windows
 
+## Quick Start
+
+**Try the demo first** (no API key required):
+```bash
+python demo.py
+```
+
+This will show you how SnowWindow analyzes different snow scenarios.
+
 ## Usage
 
 Run the application:
@@ -57,6 +66,13 @@ Or with a custom config file:
 
 ```bash
 python snow_window.py --config /path/to/config.yaml
+```
+
+### Running Tests
+
+Validate the installation:
+```bash
+python test_snow_window.py
 ```
 
 ### Example Output
@@ -157,6 +173,20 @@ preferences:
 - `requests` - HTTP library for API calls
 - `pyyaml` - YAML configuration parsing
 - `python-dateutil` - Date/time utilities
+
+## Project Structure
+
+```
+SnowWindow/
+├── snow_window.py          # Main application
+├── demo.py                 # Demo mode (no API key needed)
+├── test_snow_window.py     # Test suite
+├── config.yaml.example     # Example configuration
+├── requirements.txt        # Python dependencies
+├── README.md              # This file
+├── QUICKSTART.md          # Quick start guide
+└── .gitignore             # Git ignore rules
+```
 
 ## Tips for Best Results
 
