@@ -199,11 +199,14 @@ export function generateRecommendation(
     );
   }
 
-  // Get salt advice
+  // Get salt advice - factor in current rain and forecast
+  const rainExpected = totalRain > 2; // Significant rain expected
   const saltRec = getSaltRecommendation(
     weather.current.temperature,
     minTemp,
-    totalSnowfall > SNOW_THRESHOLDS.negligible
+    totalSnowfall > SNOW_THRESHOLDS.negligible,
+    weather.current.rain,
+    rainExpected
   );
 
   const salt: SaltAdvice = {
@@ -211,6 +214,11 @@ export function generateRecommendation(
     reason: saltRec.reason,
     timing: saltRec.shouldApply ? optimalTime : undefined,
   };
+
+  // Add salt timing note if waiting for rain
+  if (saltRec.waitForRain) {
+    reasoning.push("Salt timing: wait for rain to stop before applying.");
+  }
 
   return {
     shouldShovel,

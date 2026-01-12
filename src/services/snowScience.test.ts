@@ -88,19 +88,37 @@ describe("Snow Science Knowledge Base", () => {
 
   describe("getSaltRecommendation", () => {
     it("should recommend salt when temps will drop below freezing", () => {
-      const result = getSaltRecommendation(5, -3, true);
+      const result = getSaltRecommendation(5, -3, true, 0, false);
       expect(result.shouldApply).toBe(true);
     });
 
     it("should not recommend salt when too cold", () => {
-      const result = getSaltRecommendation(-20, -25, true);
+      const result = getSaltRecommendation(-20, -25, true, 0, false);
       expect(result.shouldApply).toBe(false);
       expect(result.reason).toContain("Too cold");
     });
 
-    it("should not recommend salt when no freeze expected", () => {
-      const result = getSaltRecommendation(5, 3, false);
+    it("should not recommend salt when no freeze expected and clear", () => {
+      const result = getSaltRecommendation(5, 3, false, 0, false);
       expect(result.shouldApply).toBe(false);
+    });
+
+    it("should not apply during heavy rain", () => {
+      const result = getSaltRecommendation(2, -5, true, 5, false); // 5mm/h rain
+      expect(result.shouldApply).toBe(false);
+      expect(result.waitForRain).toBe(true);
+    });
+
+    it("should warn to wait if rain then freeze", () => {
+      const result = getSaltRecommendation(5, -3, false, 0, true); // rain expected
+      expect(result.reason).toContain("after rain");
+      expect(result.waitForRain).toBe(true);
+    });
+
+    it("should not apply when rain expected and no freeze", () => {
+      const result = getSaltRecommendation(5, 5, false, 0, true);
+      expect(result.shouldApply).toBe(false);
+      expect(result.reason).toContain("no freeze");
     });
   });
 

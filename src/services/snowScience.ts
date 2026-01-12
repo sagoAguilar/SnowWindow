@@ -266,17 +266,29 @@ export const SALT_EFFECTIVENESS = {
 } as const;
 
 /**
+ * Rain threshold for salt effectiveness (mm/h).
+ * Heavy rain washes away salt, making application pointless.
+ */
+export const RAIN_WASH_THRESHOLD = 2; // mm/h
+
+/**
  * Determine if and when to apply salt.
+ * Takes into account rain, temperature, and snow conditions.
+ *
  * @param currentTemp - Current temperature in Celsius
  * @param forecastMinTemp - Lowest forecasted temperature
  * @param snowExpected - Whether snow is expected
- * @returns Salt recommendation
+ * @param currentRain - Current rainfall rate in mm/h
+ * @param rainExpected - Whether significant rain is in forecast
+ * @returns Salt recommendation with shouldApply, reason, and optional waitForRain flag
  */
 export function getSaltRecommendation(
   currentTemp: number,
   forecastMinTemp: number,
-  snowExpected: boolean
-): { shouldApply: boolean; reason: string } {
+  snowExpected: boolean,
+  currentRain: number = 0,
+  rainExpected: boolean = false
+): { shouldApply: boolean; reason: string; waitForRain?: boolean } {
   // Salt won't work if too cold
   if (forecastMinTemp < SALT_EFFECTIVENESS.ineffective) {
     return {
@@ -285,8 +297,52 @@ export function getSaltRecommendation(
     };
   }
 
-  // Preventive salting before freeze
-  if (currentTemp > 0 && forecastMinTemp < 0) {
+  // Heavy rain is currently falling - don't apply, will wash away
+  if (currentRain >= RAIN_WASH_THRESHOLD) {
+    // But check if freeze is coming after rain
+    if (forecastMinTemp < 0) {
+      return {
+        shouldApply: false,
+        reason:
+          "Wait for rain to stop before salting. Apply once rain ends to prevent ice.",
+        waitForRain: true,
+      };
+    }
+    return {
+      shouldApply: false,
+      reason: "Heavy rain would wash away salt. Wait for rain to stop.",
+      waitForRain: true,
+    };
+  }
+
+  // Rain expected soon - warn but may still recommend
+  if (rainExpected && !snowExpected) {
+    // Rain only, no freeze expected
+    if (forecastMinTemp >= 0) {
+      return {
+        shouldApply: false,
+        reason: "Rain expected, no freeze coming. Salt not needed.",
+      };
+    }
+    // Rain first, then freeze
+    return {
+      shouldApply: true,
+      reason:
+        "Rain expected, then freezing temps. Apply salt after rain stops.",
+      waitForRain: true,
+    };
+  }
+
+  // Clear day, no freeze expected
+  if (!snowExpected && forecastMinTemp >= 0) {
+    return {
+      shouldApply: false,
+      reason: "No freeze expected. Salt not necessary.",
+    };
+  }
+
+  // Preventive salting before freeze (clear to partly cloudy)
+  if (currentTemp > 0 && forecastMinTemp < 0 && currentRain < 0.5) {
     return {
       shouldApply: true,
       reason: "Apply salt now before freezing temperatures arrive.",
