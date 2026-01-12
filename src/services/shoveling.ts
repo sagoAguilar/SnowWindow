@@ -5,6 +5,7 @@ import type {
   WeatherData,
 } from "../types";
 import {
+  adjustShovelWindowForWind,
   calculateManpower,
   calculateNetAccumulation,
   calculateSolarMelting,
@@ -13,6 +14,7 @@ import {
   OPTIMAL_SHOVEL_WINDOW_HOURS,
   shouldShovelMidStorm,
   SNOW_THRESHOLDS,
+  WIND_THRESHOLDS,
 } from "./snowScience";
 
 /**
@@ -79,6 +81,13 @@ export function generateRecommendation(
   // Find minimum temperature for salt advice
   const minTemp = Math.min(...next24Hours.map((h) => h.temperature));
 
+  // Calculate average wind speed for next 24 hours
+  const avgWindSpeed =
+    next24Hours.length > 0
+      ? next24Hours.reduce((sum, h) => sum + h.windSpeed, 0) /
+        next24Hours.length
+      : 0;
+
   // Determine urgency and recommendation
   let urgency: UrgencyLevel = "none";
   let shouldShovel = false;
@@ -123,8 +132,13 @@ export function generateRecommendation(
 
     // Calculate optimal time (after snow stops, before compaction)
     if (snowStopTime) {
+      // Adjust shoveling window based on wind
+      const adjustedWindow = adjustShovelWindowForWind(
+        OPTIMAL_SHOVEL_WINDOW_HOURS,
+        avgWindSpeed
+      );
       optimalTime = new Date(
-        snowStopTime.getTime() + OPTIMAL_SHOVEL_WINDOW_HOURS * 60 * 60 * 1000
+        snowStopTime.getTime() + adjustedWindow * 60 * 60 * 1000
       );
 
       // If freeze is coming, shovel before it
@@ -144,6 +158,15 @@ export function generateRecommendation(
       reasoning.push(
         `Snow expected to stop around ${formatTime(snowStopTime)}.`
       );
+
+      // Add wind warning if significant
+      if (avgWindSpeed >= WIND_THRESHOLDS.moderate) {
+        reasoning.push(
+          `Wind (${Math.round(
+            avgWindSpeed
+          )} km/h) speeds up compaction - shovel sooner.`
+        );
+      }
     } else {
       optimalTime = now;
     }

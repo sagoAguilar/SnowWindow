@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  adjustShovelWindowForWind,
   calculateManpower,
   calculateNetAccumulation,
   calculateRainMelting,
   calculateSolarMelting,
+  calculateWindChill,
+  calculateWindCompactionFactor,
   getSaltRecommendation,
   RAIN_SNOW_MELT_RATIO,
   shouldShovelMidStorm,
@@ -98,6 +101,60 @@ describe("Snow Science Knowledge Base", () => {
     it("should not recommend salt when no freeze expected", () => {
       const result = getSaltRecommendation(5, 3, false);
       expect(result.shouldApply).toBe(false);
+    });
+  });
+
+  describe("calculateWindChill", () => {
+    it("should return actual temp when wind is low", () => {
+      expect(calculateWindChill(-5, 3)).toBe(-5); // Below 4.8 km/h threshold
+    });
+
+    it("should return actual temp when temp is above 10°C", () => {
+      expect(calculateWindChill(15, 20)).toBe(15);
+    });
+
+    it("should calculate lower wind chill with higher wind", () => {
+      const lowWind = calculateWindChill(-5, 10);
+      const highWind = calculateWindChill(-5, 40);
+      expect(highWind).toBeLessThan(lowWind);
+    });
+
+    it("should calculate lower wind chill with lower temp", () => {
+      const warmish = calculateWindChill(0, 20);
+      const cold = calculateWindChill(-10, 20);
+      expect(cold).toBeLessThan(warmish);
+    });
+  });
+
+  describe("calculateWindCompactionFactor", () => {
+    it("should return 1 for calm wind", () => {
+      expect(calculateWindCompactionFactor(5)).toBe(1);
+    });
+
+    it("should return higher factor for stronger wind", () => {
+      const calm = calculateWindCompactionFactor(5);
+      const strong = calculateWindCompactionFactor(45);
+      expect(strong).toBeGreaterThan(calm);
+    });
+
+    it("should return 2 for severe wind", () => {
+      expect(calculateWindCompactionFactor(65)).toBe(2);
+    });
+  });
+
+  describe("adjustShovelWindowForWind", () => {
+    it("should not change window for calm wind", () => {
+      expect(adjustShovelWindowForWind(2, 5)).toBe(2);
+    });
+
+    it("should shorten window for strong wind", () => {
+      const adjusted = adjustShovelWindowForWind(2, 45);
+      expect(adjusted).toBeLessThan(2);
+    });
+
+    it("should never go below 0.5 hours", () => {
+      const adjusted = adjustShovelWindowForWind(2, 100);
+      expect(adjusted).toBeGreaterThanOrEqual(0.5);
     });
   });
 });

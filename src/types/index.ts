@@ -16,6 +16,7 @@ export interface HourlyWeather {
   snowfall: number; // mm
   rain: number; // mm
   cloudCover: number; // percentage 0-100
+  windSpeed: number; // km/h
   isDay: boolean;
 }
 
@@ -27,6 +28,7 @@ export interface WeatherData {
     snowfall: number;
     rain: number;
     cloudCover: number;
+    windSpeed: number;
     isDay: boolean;
   };
   hourly: HourlyWeather[];

@@ -128,6 +128,83 @@ export function calculateCompactionUrgency(hoursUntilFreeze: number): number {
 }
 
 // ============================================================================
+// WIND CHILL & WIND EFFECTS
+// ============================================================================
+
+/**
+ * Calculate wind chill temperature using the North American formula.
+ * Wind chill makes it "feel" colder, accelerating freezing and compaction.
+ * Formula valid for temps <= 10°C and wind >= 4.8 km/h
+ * Source: Environment Canada / US NWS
+ *
+ * @param tempCelsius - Actual air temperature in Celsius
+ * @param windSpeedKmh - Wind speed in km/h
+ * @returns Wind chill temperature in Celsius
+ */
+export function calculateWindChill(
+  tempCelsius: number,
+  windSpeedKmh: number
+): number {
+  // Formula only valid for certain conditions
+  if (tempCelsius > 10 || windSpeedKmh < 4.8) {
+    return tempCelsius; // Return actual temp if outside valid range
+  }
+
+  // North American wind chill formula
+  const windChill =
+    13.12 +
+    0.6215 * tempCelsius -
+    11.37 * Math.pow(windSpeedKmh, 0.16) +
+    0.3965 * tempCelsius * Math.pow(windSpeedKmh, 0.16);
+
+  return Math.round(windChill * 10) / 10; // Round to 1 decimal
+}
+
+/**
+ * Wind speed thresholds for snow conditions.
+ */
+export const WIND_THRESHOLDS = {
+  /** Light breeze, minimal effect */
+  calm: 10,
+  /** Moderate wind, some drifting */
+  moderate: 25,
+  /** Strong wind, significant drifting */
+  strong: 40,
+  /** Very strong, blizzard conditions possible */
+  severe: 60,
+} as const;
+
+/**
+ * Calculate how wind accelerates snow freezing/compaction.
+ * High winds remove insulating air layer, making snow freeze faster.
+ *
+ * @param windSpeedKmh - Wind speed in km/h
+ * @returns Multiplier for compaction speed (1 = normal, >1 = faster)
+ */
+export function calculateWindCompactionFactor(windSpeedKmh: number): number {
+  if (windSpeedKmh < WIND_THRESHOLDS.calm) return 1;
+  if (windSpeedKmh < WIND_THRESHOLDS.moderate) return 1.2;
+  if (windSpeedKmh < WIND_THRESHOLDS.strong) return 1.5;
+  return 2; // Severe wind doubles compaction speed
+}
+
+/**
+ * Adjust the optimal shoveling window based on wind.
+ * High winds mean you should shovel sooner before compaction.
+ *
+ * @param baseWindowHours - Normal shoveling window (default 2 hours)
+ * @param windSpeedKmh - Current wind speed
+ * @returns Adjusted window in hours
+ */
+export function adjustShovelWindowForWind(
+  baseWindowHours: number,
+  windSpeedKmh: number
+): number {
+  const compactionFactor = calculateWindCompactionFactor(windSpeedKmh);
+  return Math.max(0.5, baseWindowHours / compactionFactor);
+}
+
+// ============================================================================
 // MANPOWER ESTIMATION
 // ============================================================================
 
