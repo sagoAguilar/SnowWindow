@@ -17,6 +17,7 @@ export interface HourlyWeather {
   rain: number; // mm
   cloudCover: number; // percentage 0-100
   windSpeed: number; // km/h
+  weatherCode: number; // WMO code
   isDay: boolean;
 }
 
@@ -29,6 +30,7 @@ export interface WeatherData {
     rain: number;
     cloudCover: number;
     windSpeed: number;
+    weatherCode: number;
     isDay: boolean;
   };
   hourly: HourlyWeather[];

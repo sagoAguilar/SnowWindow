@@ -9,6 +9,7 @@ interface OpenMeteoResponse {
     rain: number;
     cloud_cover: number;
     wind_speed_10m: number;
+    weather_code: number;
     is_day: number;
   };
   hourly: {
@@ -18,6 +19,7 @@ interface OpenMeteoResponse {
     rain: number[];
     cloud_cover: number[];
     wind_speed_10m: number[];
+    weather_code: number[];
     is_day: number[];
   };
 }
@@ -36,8 +38,10 @@ export class OpenMeteoAdapter implements WeatherAdapter {
     const params = new URLSearchParams({
       latitude: coords.latitude.toString(),
       longitude: coords.longitude.toString(),
-      current: "temperature_2m,snowfall,rain,cloud_cover,wind_speed_10m,is_day",
-      hourly: "temperature_2m,snowfall,rain,cloud_cover,wind_speed_10m,is_day",
+      current:
+        "temperature_2m,snowfall,rain,cloud_cover,wind_speed_10m,weather_code,is_day",
+      hourly:
+        "temperature_2m,snowfall,rain,cloud_cover,wind_speed_10m,weather_code,is_day",
       forecast_days: "3",
       timezone: "auto",
     });
@@ -64,6 +68,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
       rain: data.hourly.rain[i],
       cloudCover: data.hourly.cloud_cover[i],
       windSpeed: data.hourly.wind_speed_10m[i],
+      weatherCode: data.hourly.weather_code[i],
       isDay: data.hourly.is_day[i] === 1,
     }));
 
@@ -78,6 +83,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
         rain: data.current.rain,
         cloudCover: data.current.cloud_cover,
         windSpeed: data.current.wind_speed_10m,
+        weatherCode: data.current.weather_code,
         isDay: data.current.is_day === 1,
       },
       hourly,

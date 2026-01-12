@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { DynamicBackground } from './components/DynamicBackground';
 import { LocationInput } from './components/LocationInput';
 import { RecommendationCard } from './components/RecommendationCard';
 import { SnowAnimation } from './components/SnowAnimation';
@@ -105,6 +106,12 @@ function App() {
 
   return (
     <div className="app">
+      {weather && (
+        <DynamicBackground
+          weatherCode={weather.current.weatherCode}
+          isDay={weather.current.isDay}
+        />
+      )}
       <SnowAnimation />
 
       <header className="header">
