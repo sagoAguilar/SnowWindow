@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { DevSandbox } from './components/DevSandbox';
 import { DynamicBackground } from './components/DynamicBackground';
 import { LocationInput } from './components/LocationInput';
 import { RecommendationCard } from './components/RecommendationCard';
@@ -9,8 +10,10 @@ import {
   requestNotificationPermission,
   scheduleNotification
 } from './services/notifications';
+import { PRESET_SCENARIOS } from './services/scenarios';
 import { generateRecommendation } from './services/shoveling';
 import { weatherAdapter } from './services/weather';
+import { MockWeatherAdapter, type MockWeatherParams } from './services/weather/mockWeather';
 import type { Location, ShovelingRecommendation, UserSettings, WeatherData } from './types';
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -26,13 +29,29 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch weather when location changes
-  const fetchWeather = useCallback(async (loc: Location) => {
+  // Dev mode state (read-only, set via URL param ?dev=true)
+  const devMode = (() => {
+    // Check URL param or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const devParam = urlParams.get('dev');
+    if (devParam === 'true') {
+      localStorage.setItem('devMode', 'true');
+      return true;
+    }
+    return localStorage.getItem('devMode') === 'true';
+  })();
+  const [devModeActive, setDevModeActive] = useState(false);
+  const [mockAdapter] = useState(() => new MockWeatherAdapter(PRESET_SCENARIOS[0].params));
+  const [mockParams, setMockParams] = useState<MockWeatherParams>(PRESET_SCENARIOS[0].params);
+
+  // Fetch weather (real or mock)
+  const fetchWeather = useCallback(async (loc: Location, useMock = false) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await weatherAdapter.fetchWeather(loc);
+      const adapter = useMock ? mockAdapter : weatherAdapter;
+      const data = await adapter.fetchWeather(loc);
       setWeather(data);
 
       // Generate recommendation
@@ -55,24 +74,46 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [settings.areaSquareMeters, settings.notificationsEnabled]);
+  }, [settings.areaSquareMeters, settings.notificationsEnabled, mockAdapter]);
 
   // Handle location set
   const handleLocationSet = (loc: Location) => {
     setLocation(loc);
-    fetchWeather(loc);
+    fetchWeather(loc, devModeActive);
   };
 
-  // Refresh weather every 15 minutes
+  // Handle dev mode toggle
+  const handleDevModeToggle = () => {
+    const newActive = !devModeActive;
+    setDevModeActive(newActive);
+    if (newActive && location) {
+      // Refresh with mock data
+      fetchWeather(location, true);
+    } else if (location) {
+      // Refresh with real data
+      fetchWeather(location, false);
+    }
+  };
+
+  // Handle mock params change
+  const handleMockParamsChange = (params: MockWeatherParams) => {
+    setMockParams(params);
+    mockAdapter.setParams(params);
+    if (devModeActive && location) {
+      fetchWeather(location, true);
+    }
+  };
+
+  // Refresh weather every 15 minutes (only in real mode)
   useEffect(() => {
-    if (!location) return;
+    if (!location || devModeActive) return;
 
     const interval = setInterval(() => {
-      fetchWeather(location);
+      fetchWeather(location, false);
     }, 15 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [location, fetchWeather]);
+  }, [location, fetchWeather, devModeActive]);
 
   // Toggle notifications
   const handleToggleNotifications = async () => {
@@ -123,6 +164,16 @@ function App() {
       </header>
 
       <main className="main">
+        {/* Dev Sandbox - only show if dev mode enabled */}
+        {devMode && (
+          <DevSandbox
+            onParamsChange={handleMockParamsChange}
+            currentParams={mockParams}
+            isActive={devModeActive}
+            onToggle={handleDevModeToggle}
+          />
+        )}
+
         <LocationInput
           onLocationSet={handleLocationSet}
           currentLocation={location}
@@ -132,7 +183,7 @@ function App() {
         {error && (
           <div className="error-banner">
             <span>⚠️</span> {error}
-            <button onClick={() => location && fetchWeather(location)}>Retry</button>
+            <button onClick={() => location && fetchWeather(location, devModeActive)}>Retry</button>
           </div>
         )}
 
