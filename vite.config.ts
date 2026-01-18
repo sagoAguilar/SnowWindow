@@ -12,8 +12,8 @@ export default defineConfig({
         name: "SnowWindow",
         short_name: "SnowWindow",
         description: "Smart snow shoveling timer - know when to shovel",
-        theme_color: "#1a1a2e",
-        background_color: "#1a1a2e",
+        theme_color: "#F0F4F8",
+        background_color: "#F0F4F8",
         display: "standalone",
         icons: [
           {
