@@ -95,6 +95,11 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           <div className="salt-content">
             <strong>Salt Recommendation</strong>
             <p>{salt.reason}</p>
+            {salt.amount && salt.timingMessage && (
+              <p className="salt-details">
+                Use <strong>{salt.amount}</strong> • {salt.timingMessage}
+              </p>
+            )}
           </div>
         </div>
       )}

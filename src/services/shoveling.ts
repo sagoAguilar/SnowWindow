@@ -23,7 +23,7 @@ import {
  */
 export function generateRecommendation(
   weather: WeatherData,
-  areaSquareMeters: number = 50 // Default: typical driveway
+  areaSquareMeters: number = 50, // Default: typical driveway
 ): ShovelingRecommendation {
   const now = new Date();
   const reasoning: string[] = [];
@@ -56,7 +56,7 @@ export function generateRecommendation(
         hour.temperature,
         hour.cloudCover,
         1, // 1 hour
-        hour.isDay
+        hour.isDay,
       );
     }
   }
@@ -70,12 +70,12 @@ export function generateRecommendation(
   const netAccumulation = calculateNetAccumulation(
     totalSnowfall,
     totalRain,
-    totalSolarMelt
+    totalSolarMelt,
   );
 
   // Find when temperature will drop below freezing (compaction risk)
   const freezeTime = next24Hours.find(
-    (h) => h.time > now && h.temperature < COMPACTION_FREEZE_TEMP
+    (h) => h.time > now && h.temperature < COMPACTION_FREEZE_TEMP,
   )?.time;
 
   // Find minimum temperature for salt advice
@@ -101,7 +101,7 @@ export function generateRecommendation(
     optimalTime = now;
     message = "Heavy snowfall - shovel now to prevent buildup!";
     reasoning.push(
-      `Accumulation exceeds ${SNOW_THRESHOLDS.veryHeavy}mm threshold.`
+      `Accumulation exceeds ${SNOW_THRESHOLDS.veryHeavy}mm threshold.`,
     );
   }
   // No snow expected or negligible
@@ -111,7 +111,7 @@ export function generateRecommendation(
     message = "No shoveling needed.";
     if (totalSnowfall > 0) {
       reasoning.push(
-        `Light snow (${totalSnowfall.toFixed(1)}mm) will melt naturally.`
+        `Light snow (${totalSnowfall.toFixed(1)}mm) will melt naturally.`,
       );
     } else {
       reasoning.push("No significant snow in forecast.");
@@ -123,7 +123,7 @@ export function generateRecommendation(
     shouldShovel = false;
     message = "Light dusting expected - shoveling optional.";
     reasoning.push(
-      `Expected: ${netAccumulation.toFixed(1)}mm net accumulation.`
+      `Expected: ${netAccumulation.toFixed(1)}mm net accumulation.`,
     );
   }
   // Moderate to heavy - should shovel
@@ -135,10 +135,10 @@ export function generateRecommendation(
       // Adjust shoveling window based on wind
       const adjustedWindow = adjustShovelWindowForWind(
         OPTIMAL_SHOVEL_WINDOW_HOURS,
-        avgWindSpeed
+        avgWindSpeed,
       );
       optimalTime = new Date(
-        snowStopTime.getTime() + adjustedWindow * 60 * 60 * 1000
+        snowStopTime.getTime() + adjustedWindow * 60 * 60 * 1000,
       );
 
       // If freeze is coming, shovel before it
@@ -146,7 +146,7 @@ export function generateRecommendation(
         optimalTime = new Date(freezeTime.getTime() - 30 * 60 * 1000); // 30 min before freeze
         urgency = "high";
         reasoning.push(
-          `Temperature drops below freezing at ${formatTime(freezeTime)}.`
+          `Temperature drops below freezing at ${formatTime(freezeTime)}.`,
         );
       }
 
@@ -156,15 +156,15 @@ export function generateRecommendation(
       }
 
       reasoning.push(
-        `Snow expected to stop around ${formatTime(snowStopTime)}.`
+        `Snow expected to stop around ${formatTime(snowStopTime)}.`,
       );
 
       // Add wind warning if significant
       if (avgWindSpeed >= WIND_THRESHOLDS.moderate) {
         reasoning.push(
           `Wind (${Math.round(
-            avgWindSpeed
-          )} km/h) speeds up compaction - shovel sooner.`
+            avgWindSpeed,
+          )} km/h) speeds up compaction - shovel sooner.`,
         );
       }
     } else {
@@ -181,7 +181,7 @@ export function generateRecommendation(
     } else {
       urgency = urgency === "high" ? "moderate" : "low";
       message = `Light-moderate snow - best to shovel at ${formatTime(
-        optimalTime
+        optimalTime,
       )}`;
     }
 
@@ -195,7 +195,7 @@ export function generateRecommendation(
 
   if (estimatedMinutes) {
     reasoning.push(
-      `Estimated clearing time: ~${estimatedMinutes} minutes for ${areaSquareMeters}m².`
+      `Estimated clearing time: ~${estimatedMinutes} minutes for ${areaSquareMeters}m².`,
     );
   }
 
@@ -206,13 +206,33 @@ export function generateRecommendation(
     minTemp,
     totalSnowfall > SNOW_THRESHOLDS.negligible,
     weather.current.rain,
-    rainExpected
+    rainExpected,
   );
+
+  // Calculate salt amount (approx 20g per square meter)
+  const saltAmountKg = areaSquareMeters * 0.02;
+  const saltAmountStr =
+    saltAmountKg >= 1
+      ? `~${saltAmountKg.toFixed(1)} kg`
+      : `~${(saltAmountKg * 1000).toFixed(0)} g`;
+
+  let timingMessage = "";
+  if (saltRec.shouldApply) {
+    if (saltRec.waitForRain) {
+      timingMessage = "Wait for rain to stop, then apply.";
+    } else if (optimalTime && optimalTime > now) {
+      timingMessage = `Apply before ${formatTime(optimalTime)}`;
+    } else {
+      timingMessage = "Apply now.";
+    }
+  }
 
   const salt: SaltAdvice = {
     shouldApply: saltRec.shouldApply,
     reason: saltRec.reason,
     timing: saltRec.shouldApply ? optimalTime : undefined,
+    amount: saltRec.shouldApply ? saltAmountStr : undefined,
+    timingMessage: saltRec.shouldApply ? timingMessage : undefined,
   };
 
   // Add salt timing note if waiting for rain

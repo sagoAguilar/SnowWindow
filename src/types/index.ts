@@ -45,6 +45,8 @@ export interface SaltAdvice {
   shouldApply: boolean;
   timing?: Date;
   reason: string;
+  amount?: string; // e.g., "1.5 kg"
+  timingMessage?: string; // e.g., "Apply before 5:00 PM"
 }
 
 /** Main shoveling recommendation */
