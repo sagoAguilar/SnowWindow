@@ -11,6 +11,16 @@ export function getCurrentLocation(): Promise<Coordinates> {
       return;
     }
 
+    // Geolocation requires a secure context (HTTPS) in most modern browsers
+    if (!window.isSecureContext) {
+      reject(
+        new Error(
+          "Location access requires a secure connection (HTTPS). If testing locally on Android, try using a tunneling service like ngrok or local forwarding.",
+        ),
+      );
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
@@ -23,7 +33,7 @@ export function getCurrentLocation(): Promise<Coordinates> {
         switch (error.code) {
           case error.PERMISSION_DENIED:
             message =
-              "Location permission denied. Please enable location access.";
+              "Location access was denied. Please check your browser permissions (address bar icon) or ensure your device's Location is turned on.";
             break;
           case error.POSITION_UNAVAILABLE:
             message = "Location information unavailable.";
@@ -40,7 +50,7 @@ export function getCurrentLocation(): Promise<Coordinates> {
         enableHighAccuracy: false,
         timeout: 10000,
         maximumAge: 300000, // 5 minutes
-      }
+      },
     );
   });
 }
