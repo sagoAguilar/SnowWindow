@@ -37,9 +37,37 @@ SnowWindow monitors your local weather and tells you exactly when to shovel:
 4. **Generate Recommendation** → Clear advice with reasoning
 5. **Notify User** → Push notification when it's time to shovel
 
+## Development & Debugging
+
+The app includes a built-in **Dev Sandbox** for testing different weather scenarios without waiting for actual snow.
+
+### Running Locally
+
+```bash
+npm install
+npm run dev
+```
+
+### Enabling Dev Mode
+
+To enable the Dev Sandbox, add `?dev=true` to the URL:
+
+```
+http://localhost:5173/?dev=true
+```
+
+Once enabled, a "Dev Sandbox" panel will appear at the top of the interface. This allows you to:
+
+- **Load Preset Scenarios**: Quickly switch between "Ideal Shoveling", "Heavy Snow", "Rain/Melt", etc.
+- **Manipulate Weather**: Adjust temperature, snowfall, and time of day in real-time.
+- **Test Recommendations**: Verify how the shoveling algorithm responds to different conditions.
+
+> **Note**: Dev Mode preference is saved in `localStorage`. To disable it, remove `?dev=true` and toggle the setting off, or clear your local storage.
+
 ## Tech Stack
 
 - **Frontend**: React + TypeScript + Vite
+- **Web App Design**: Snow Design System v1.0
 - **Weather API**: Open-Meteo (free, no API key)
 - **PWA**: vite-plugin-pwa for installability & offline support
 - **Notifications**: Web Push API
