@@ -21,14 +21,14 @@ describe("OpenMeteoAdapter", () => {
         is_day: 1,
       },
       hourly: {
-        time: ["2024-01-01T12:00:00Z"],
-        temperature_2m: [-5],
-        snowfall: [2.0], // 2.0 cm
-        rain: [0],
-        cloud_cover: [100],
-        wind_speed_10m: [10],
-        weather_code: [71],
-        is_day: [1],
+        time: ["2024-01-01T00:00:00Z", "2024-01-01T12:00:00Z"],
+        temperature_2m: [-6, -5],
+        snowfall: [1.5, 2.0], // 1.5 cm (past), 2.0 cm (current)
+        rain: [0, 0],
+        cloud_cover: [90, 100],
+        wind_speed_10m: [8, 10],
+        weather_code: [71, 71],
+        is_day: [0, 1],
       },
     };
 
@@ -47,7 +47,9 @@ describe("OpenMeteoAdapter", () => {
 
     // Expect 1.5 cm -> 15 mm
     expect(weather.current.snowfall).toBe(15);
-    // Expect 2.0 cm -> 20 mm
-    expect(weather.hourly[0].snowfall).toBe(20);
+    // Expect past hour: 1.5 cm -> 15 mm
+    expect(weather.hourly[0].snowfall).toBe(15);
+    // Expect current hour: 2.0 cm -> 20 mm
+    expect(weather.hourly[1].snowfall).toBe(20);
   });
 });
