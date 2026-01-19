@@ -18,14 +18,75 @@ import type { Location, ShovelingRecommendation, UserSettings, WeatherData } fro
 
 const DEFAULT_SETTINGS: UserSettings = {
   areaSquareMeters: 50,
-  notificationsEnabled: false
+  notificationsEnabled: false,
+  lastShoveledAt: undefined
 };
 
+// Local storage keys
+const STORAGE_KEYS = {
+  LOCATION: 'snowwindow_location',
+  SETTINGS: 'snowwindow_settings'
+};
+
+// Load location from localStorage
+function loadLocation(): Location | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.LOCATION);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return {
+      latitude: parsed.latitude,
+      longitude: parsed.longitude,
+      name: parsed.name
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Save location to localStorage
+function saveLocation(location: Location | null): void {
+  try {
+    if (location) {
+      localStorage.setItem(STORAGE_KEYS.LOCATION, JSON.stringify(location));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.LOCATION);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// Load settings from localStorage
+function loadSettings(): UserSettings {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!stored) return DEFAULT_SETTINGS;
+    const parsed = JSON.parse(stored);
+    return {
+      areaSquareMeters: parsed.areaSquareMeters ?? DEFAULT_SETTINGS.areaSquareMeters,
+      notificationsEnabled: parsed.notificationsEnabled ?? DEFAULT_SETTINGS.notificationsEnabled,
+      lastShoveledAt: parsed.lastShoveledAt ? new Date(parsed.lastShoveledAt) : undefined
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+// Save settings to localStorage
+function saveSettings(settings: UserSettings): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 function App() {
-  const [location, setLocation] = useState<Location | null>(null);
+  const [location, setLocation] = useState<Location | null>(() => loadLocation());
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [recommendation, setRecommendation] = useState<ShovelingRecommendation | null>(null);
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,8 +140,21 @@ function App() {
   // Handle location set
   const handleLocationSet = (loc: Location) => {
     setLocation(loc);
+    saveLocation(loc);
     fetchWeather(loc, devModeActive);
   };
+
+  // Load weather on startup if location exists
+  useEffect(() => {
+    if (location && !weather && !isLoading) {
+      fetchWeather(location, devModeActive);
+    }
+  }, []); // Only run once on mount
+
+  // Save settings when they change
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings]);
 
   // Handle dev mode toggle
   const handleDevModeToggle = () => {
@@ -143,6 +217,20 @@ function App() {
     }
   };
 
+  // Mark that shoveling is done
+  const handleMarkShoveled = () => {
+    setSettings(s => ({ ...s, lastShoveledAt: new Date() }));
+  };
+
+  // Check if should show reminder (shoveled more than 6 hours ago)
+  const shouldShowShovelingReminder = () => {
+    if (!settings.lastShoveledAt || !recommendation) return false;
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    return settings.lastShoveledAt < sixHoursAgo &&
+           recommendation.shouldShovel &&
+           recommendation.totalAccumulation >= 25; // At least "light" snow
+  };
+
   const notificationStatus = getNotificationStatus();
 
   return (
@@ -196,7 +284,48 @@ function App() {
 
         {weather && recommendation && !isLoading && (
           <>
+            {shouldShowShovelingReminder() && (
+              <div className="reminder-banner card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '2rem' }}>⏰</span>
+                  <div style={{ flex: 1 }}>
+                    <strong>Shoveling Reminder</strong>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                      It's been more than 6 hours since you last shoveled and there's snow accumulation.
+                      Consider checking if shoveling is needed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <RecommendationCard recommendation={recommendation} />
+
+            {recommendation.shouldShovel && (
+              <div className="shovel-tracking card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    {settings.lastShoveledAt ? (
+                      <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        Last shoveled: {settings.lastShoveledAt.toLocaleString()}
+                      </p>
+                    ) : (
+                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#888' }}>
+                        No shoveling recorded yet
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleMarkShoveled}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    ✓ Mark Shoveled
+                  </button>
+                </div>
+              </div>
+            )}
+
             <WeatherDisplay weather={weather} />
           </>
         )}
