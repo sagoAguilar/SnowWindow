@@ -50,7 +50,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
 
     if (!response.ok) {
       throw new Error(
-        `Weather API error: ${response.status} ${response.statusText}`
+        `Weather API error: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -64,7 +64,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
     const hourly: HourlyWeather[] = data.hourly.time.map((time, i) => ({
       time: new Date(time),
       temperature: data.hourly.temperature_2m[i],
-      snowfall: data.hourly.snowfall[i],
+      snowfall: data.hourly.snowfall[i] * 10, // cm -> mm
       rain: data.hourly.rain[i],
       cloudCover: data.hourly.cloud_cover[i],
       windSpeed: data.hourly.wind_speed_10m[i],
@@ -79,7 +79,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
       },
       current: {
         temperature: data.current.temperature_2m,
-        snowfall: data.current.snowfall,
+        snowfall: data.current.snowfall * 10, // cm -> mm
         rain: data.current.rain,
         cloudCover: data.current.cloud_cover,
         windSpeed: data.current.wind_speed_10m,
