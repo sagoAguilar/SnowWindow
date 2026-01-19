@@ -65,6 +65,7 @@ export interface ShovelingRecommendation {
 export interface UserSettings {
   areaSquareMeters: number; // Driveway/walkway area
   notificationsEnabled: boolean;
+  lastShoveledAt?: Date; // When user last shoveled
 }
 
 /** App state */
