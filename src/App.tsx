@@ -116,7 +116,7 @@ function App() {
       setWeather(data);
 
       // Generate recommendation
-      const rec = generateRecommendation(data, settings.areaSquareMeters);
+      const rec = generateRecommendation(data, settings.areaSquareMeters, settings.lastShoveledAt);
       setRecommendation(rec);
 
       // Schedule notification if enabled
@@ -211,7 +211,7 @@ function App() {
       setSettings(s => ({ ...s, areaSquareMeters: value }));
       // Recalculate if we have weather
       if (weather) {
-        const rec = generateRecommendation(weather, value);
+        const rec = generateRecommendation(weather, value, settings.lastShoveledAt);
         setRecommendation(rec);
       }
     }

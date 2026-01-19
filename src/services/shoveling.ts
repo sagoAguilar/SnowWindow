@@ -24,35 +24,43 @@ import {
 export function generateRecommendation(
   weather: WeatherData,
   areaSquareMeters: number = 50, // Default: typical driveway
+  lastShoveledAt?: Date, // When user last shoveled (to calculate accumulation since then)
 ): ShovelingRecommendation {
   const now = new Date();
   const reasoning: string[] = [];
 
-  // Get next 24 hours of forecast
+  // Determine start time for accumulation calculation
+  // If user shoveled recently (within past 24h), start from then
+  // Otherwise, use past 24 hours to capture overnight accumulation
+  const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const accumulationStartTime =
+    lastShoveledAt && lastShoveledAt > past24h
+      ? lastShoveledAt
+      : past24h;
+
+  // Get hours from accumulation start until now (past accumulation)
+  const pastHours = weather.hourly.filter((h) => {
+    return h.time >= accumulationStartTime && h.time <= now;
+  });
+
+  // Get next 24 hours of forecast (future accumulation)
   const next24Hours = weather.hourly.filter((h) => {
     const hoursDiff = (h.time.getTime() - now.getTime()) / (1000 * 60 * 60);
     return hoursDiff >= 0 && hoursDiff <= 24;
   });
 
-  // Calculate totals
-  let totalSnowfall = 0;
-  let totalRain = 0;
-  let totalSolarMelt = 0;
-  let snowStopTime: Date | null = null;
-  let lastSnowHour: Date | null = null;
+  // Calculate past accumulation (already happened)
+  let pastSnowfall = 0;
+  let pastRain = 0;
+  let pastSolarMelt = 0;
 
-  for (const hour of next24Hours) {
-    totalSnowfall += hour.snowfall;
-    totalRain += hour.rain;
+  for (const hour of pastHours) {
+    pastSnowfall += hour.snowfall;
+    pastRain += hour.rain;
 
-    // Track when snow stops
-    if (hour.snowfall > 0) {
-      lastSnowHour = hour.time;
-    }
-
-    // Calculate solar melting for each hour
+    // Calculate solar melting for past hours
     if (hour.isDay && hour.temperature > 0) {
-      totalSolarMelt += calculateSolarMelting(
+      pastSolarMelt += calculateSolarMelting(
         hour.temperature,
         hour.cloudCover,
         1, // 1 hour
@@ -61,17 +69,65 @@ export function generateRecommendation(
     }
   }
 
+  // Calculate future accumulation (forecast)
+  let futureSnowfall = 0;
+  let futureRain = 0;
+  let futureSolarMelt = 0;
+  let snowStopTime: Date | null = null;
+  let lastSnowHour: Date | null = null;
+
+  for (const hour of next24Hours) {
+    futureSnowfall += hour.snowfall;
+    futureRain += hour.rain;
+
+    // Track when snow stops
+    if (hour.snowfall > 0) {
+      lastSnowHour = hour.time;
+    }
+
+    // Calculate solar melting for each hour
+    if (hour.isDay && hour.temperature > 0) {
+      futureSolarMelt += calculateSolarMelting(
+        hour.temperature,
+        hour.cloudCover,
+        1, // 1 hour
+        hour.isDay,
+      );
+    }
+  }
+
+  // Total snowfall and melting factors
+  const totalSnowfall = pastSnowfall + futureSnowfall;
+  const totalRain = pastRain + futureRain;
+  const totalSolarMelt = pastSolarMelt + futureSolarMelt;
+
   // Snow stops at the hour after last snowfall
   if (lastSnowHour) {
     snowStopTime = new Date(lastSnowHour.getTime() + 60 * 60 * 1000);
   }
 
-  // Calculate net accumulation
+  // Calculate net accumulation (total = past + future, accounting for melting)
   const netAccumulation = calculateNetAccumulation(
     totalSnowfall,
     totalRain,
     totalSolarMelt,
   );
+
+  // Add context about past vs future accumulation if we have past data
+  if (pastSnowfall > 0) {
+    const pastNet = calculateNetAccumulation(pastSnowfall, pastRain, pastSolarMelt);
+    const futureNet = calculateNetAccumulation(futureSnowfall, futureRain, futureSolarMelt);
+
+    if (lastShoveledAt && lastShoveledAt > past24h) {
+      reasoning.push(
+        `${pastNet.toFixed(1)}mm accumulated since last shoveled, ${futureNet.toFixed(1)}mm expected.`,
+      );
+    } else {
+      reasoning.push(
+        `${pastNet.toFixed(1)}mm accumulated in past 24h, ${futureNet.toFixed(1)}mm expected.`,
+      );
+    }
+  }
 
   // Find when temperature will drop below freezing (compaction risk)
   const freezeTime = next24Hours.find(

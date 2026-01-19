@@ -43,6 +43,7 @@ export class OpenMeteoAdapter implements WeatherAdapter {
       hourly:
         "temperature_2m,snowfall,rain,cloud_cover,wind_speed_10m,weather_code,is_day",
       forecast_days: "3",
+      past_days: "1", // Include past 24 hours for accumulation tracking
       timezone: "auto",
     });
 
