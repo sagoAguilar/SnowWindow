@@ -270,11 +270,15 @@ a:hover {
 
 .location-empty {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .location-empty p {
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-md);
+  margin-bottom: 0; /* Margin handled by gap now */
 }
 
 /* --------------------------------------------------------------------------
