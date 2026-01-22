@@ -25,6 +25,8 @@ export function generateRecommendation(
   weather: WeatherData,
   areaSquareMeters: number = 50, // Default: typical driveway
   lastShoveledAt?: Date, // When user last shoveled (to calculate accumulation since then)
+  snowplowPileHeight?: number, // Manual snowplow pile height in mm
+  carDepartureTime?: string, // Morning departure time (HH:MM format)
 ): ShovelingRecommendation {
   const now = new Date();
   const reasoning: string[] = [];
@@ -113,6 +115,66 @@ export function generateRecommendation(
     totalSolarMelt,
   );
 
+  // Detect slush conditions: rain after snow
+  let slushWarning = false;
+  let hasSnowThenRain = false;
+  for (let i = 0; i < next24Hours.length - 1; i++) {
+    const current = next24Hours[i];
+    const next = next24Hours[i + 1];
+    // If we have snow in one hour, and rain in the next (or vice versa in short period)
+    if (current.snowfall > 0 && next.rain > 1) {
+      hasSnowThenRain = true;
+      break;
+    }
+  }
+  // Also check if we had past snow and future rain is coming
+  if (pastSnowfall > 5 && futureRain > 2) {
+    hasSnowThenRain = true;
+  }
+  // Slush warning if we have significant snow+rain combination
+  if (hasSnowThenRain && totalSnowfall > 5) {
+    slushWarning = true;
+  }
+
+  // Check for snowplow pile override
+  const snowplowPileDetected = snowplowPileHeight !== undefined && snowplowPileHeight > 0;
+
+  // Check overnight accumulation for morning car departure
+  let blocksDriveway = false;
+  if (carDepartureTime) {
+    // Parse departure time
+    const [depHour, depMin] = carDepartureTime.split(':').map(Number);
+    const departureToday = new Date(now);
+    departureToday.setHours(depHour, depMin, 0, 0);
+
+    // If departure time is in the past today, assume it's for tomorrow
+    if (departureToday < now) {
+      departureToday.setDate(departureToday.getDate() + 1);
+    }
+
+    // Check overnight accumulation (from 6 PM yesterday to departure time)
+    const overnightStart = new Date(now);
+    overnightStart.setHours(18, 0, 0, 0);
+    if (overnightStart > now) {
+      overnightStart.setDate(overnightStart.getDate() - 1);
+    }
+
+    const overnightHours = weather.hourly.filter(h =>
+      h.time >= overnightStart && h.time <= departureToday
+    );
+
+    let overnightSnow = 0;
+    for (const hour of overnightHours) {
+      // Count both past and future overnight snow
+      overnightSnow += hour.snowfall;
+    }
+
+    // If overnight snow exceeds 5mm (lower threshold for driveway access), flag it
+    if (overnightSnow >= 5) {
+      blocksDriveway = true;
+    }
+  }
+
   // Add context about past vs future accumulation if we have past data
   if (pastSnowfall > 0) {
     const pastNet = calculateNetAccumulation(pastSnowfall, pastRain, pastSolarMelt);
@@ -162,25 +224,79 @@ export function generateRecommendation(
   }
   // No snow expected or negligible
   else if (netAccumulation < SNOW_THRESHOLDS.negligible) {
-    urgency = "none";
-    shouldShovel = false;
-    message = "No shoveling needed.";
-    if (totalSnowfall > 0) {
+    // Check for override conditions
+    if (snowplowPileDetected) {
+      urgency = "moderate";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Snowplow pile needs clearing.";
       reasoning.push(
-        `Light snow (${totalSnowfall.toFixed(1)}mm) will melt naturally.`,
+        `Snowplow left a ${snowplowPileHeight}mm pile that needs removal.`,
+      );
+    } else if (blocksDriveway) {
+      urgency = "moderate";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Clear driveway for morning departure.";
+      reasoning.push(
+        `Overnight accumulation blocks car access for ${carDepartureTime} departure.`,
+      );
+    } else if (slushWarning) {
+      urgency = "low";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Slush cleanup recommended.";
+      reasoning.push(
+        "Rain after snow creates slush that needs clearing.",
       );
     } else {
-      reasoning.push("No significant snow in forecast.");
+      urgency = "none";
+      shouldShovel = false;
+      message = "No shoveling needed.";
+      if (totalSnowfall > 0) {
+        reasoning.push(
+          `Light snow (${totalSnowfall.toFixed(1)}mm) will melt naturally.`,
+        );
+      } else {
+        reasoning.push("No significant snow in forecast.");
+      }
     }
   }
   // Light snow - optional
   else if (netAccumulation < SNOW_THRESHOLDS.light) {
-    urgency = "low";
-    shouldShovel = false;
-    message = "Light dusting expected - shoveling optional.";
-    reasoning.push(
-      `Expected: ${netAccumulation.toFixed(1)}mm net accumulation.`,
-    );
+    // Check for override conditions
+    if (snowplowPileDetected) {
+      urgency = "moderate";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Snowplow pile needs clearing.";
+      reasoning.push(
+        `Snowplow left a ${snowplowPileHeight}mm pile that needs removal.`,
+      );
+    } else if (blocksDriveway) {
+      urgency = "moderate";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Clear driveway for morning departure.";
+      reasoning.push(
+        `Overnight accumulation blocks car access for ${carDepartureTime} departure.`,
+      );
+    } else if (slushWarning) {
+      urgency = "low";
+      shouldShovel = true;
+      optimalTime = now;
+      message = "Slush cleanup recommended.";
+      reasoning.push(
+        "Rain after snow creates slush that needs clearing.",
+      );
+    } else {
+      urgency = "low";
+      shouldShovel = false;
+      message = "Light dusting expected - shoveling optional.";
+      reasoning.push(
+        `Expected: ${netAccumulation.toFixed(1)}mm net accumulation.`,
+      );
+    }
   }
   // Moderate to heavy - should shovel
   else {
@@ -305,6 +421,9 @@ export function generateRecommendation(
     estimatedMinutes,
     salt,
     totalAccumulation: netAccumulation,
+    slushWarning,
+    blocksDriveway,
+    snowplowPileDetected,
   };
 }
 

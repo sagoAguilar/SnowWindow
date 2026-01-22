@@ -59,6 +59,9 @@ export interface ShovelingRecommendation {
   estimatedMinutes?: number; // Time to shovel (based on area)
   salt: SaltAdvice;
   totalAccumulation: number; // mm of snow
+  slushWarning?: boolean; // Rain after snow creates slush needing cleanup
+  blocksDriveway?: boolean; // Overnight accumulation blocks car access
+  snowplowPileDetected?: boolean; // Manual snowplow pile needs clearing
 }
 
 /** User settings */
@@ -66,6 +69,8 @@ export interface UserSettings {
   areaSquareMeters: number; // Driveway/walkway area
   notificationsEnabled: boolean;
   lastShoveledAt?: Date; // When user last shoveled
+  snowplowPileHeight?: number; // Manual snowplow pile height in mm
+  carDepartureTime?: string; // Morning departure time in HH:MM format (e.g., "07:00")
 }
 
 /** App state */
