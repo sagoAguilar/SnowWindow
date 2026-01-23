@@ -243,14 +243,6 @@ function App() {
       )}
       <SnowAnimation />
 
-      <header className="header">
-        <h1>
-          <span className="logo">❄️</span>
-          SnowWindow
-        </h1>
-        <p className="tagline">Know when to shovel</p>
-      </header>
-
       <main className="main">
         {/* Dev Sandbox - only show if dev mode enabled */}
         {devMode && (
