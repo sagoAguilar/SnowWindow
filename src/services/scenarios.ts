@@ -176,4 +176,52 @@ export const PRESET_SCENARIOS: WeatherScenario[] = [
       durationHours: 12,
     },
   },
+  {
+    id: "snowplow-pile",
+    name: "🚜 Snowplow Pile",
+    description: "Light natural snowfall but snowplow left pile at driveway entrance",
+    params: {
+      temperature: -5,
+      tempTrend: "stable",
+      snowfallRate: 0.5,
+      rainRate: 0,
+      cloudCover: 60,
+      windSpeed: 10,
+      weatherCode: 71, // Light snow
+      isDay: true,
+      durationHours: 4,
+    },
+  },
+  {
+    id: "overnight-car-blocked",
+    name: "🚗 Overnight Car Blocked",
+    description: "Overnight accumulation blocks morning car departure",
+    params: {
+      temperature: -6,
+      tempTrend: "stable",
+      snowfallRate: 1.5,
+      rainRate: 0,
+      cloudCover: 85,
+      windSpeed: 8,
+      weatherCode: 71, // Light snow
+      isDay: false,
+      durationHours: 8,
+    },
+  },
+  {
+    id: "rain-after-snow-slush",
+    name: "💧 Rain After Snow (Slush)",
+    description: "Snow followed by rain creates slushy mess needing cleanup",
+    params: {
+      temperature: 1,
+      tempTrend: "rising",
+      snowfallRate: 4,
+      rainRate: 3,
+      cloudCover: 90,
+      windSpeed: 15,
+      weatherCode: 73, // Moderate snow
+      isDay: true,
+      durationHours: 6,
+    },
+  },
 ];

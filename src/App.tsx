@@ -19,7 +19,9 @@ import type { Location, ShovelingRecommendation, UserSettings, WeatherData } fro
 const DEFAULT_SETTINGS: UserSettings = {
   areaSquareMeters: 50,
   notificationsEnabled: false,
-  lastShoveledAt: undefined
+  lastShoveledAt: undefined,
+  snowplowPileHeight: undefined,
+  carDepartureTime: undefined
 };
 
 // Local storage keys
@@ -66,7 +68,9 @@ function loadSettings(): UserSettings {
     return {
       areaSquareMeters: parsed.areaSquareMeters ?? DEFAULT_SETTINGS.areaSquareMeters,
       notificationsEnabled: parsed.notificationsEnabled ?? DEFAULT_SETTINGS.notificationsEnabled,
-      lastShoveledAt: parsed.lastShoveledAt ? new Date(parsed.lastShoveledAt) : undefined
+      lastShoveledAt: parsed.lastShoveledAt ? new Date(parsed.lastShoveledAt) : undefined,
+      snowplowPileHeight: parsed.snowplowPileHeight,
+      carDepartureTime: parsed.carDepartureTime
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -116,7 +120,13 @@ function App() {
       setWeather(data);
 
       // Generate recommendation
-      const rec = generateRecommendation(data, settings.areaSquareMeters, settings.lastShoveledAt);
+      const rec = generateRecommendation(
+        data,
+        settings.areaSquareMeters,
+        settings.lastShoveledAt,
+        settings.snowplowPileHeight,
+        settings.carDepartureTime
+      );
       setRecommendation(rec);
 
       // Schedule notification if enabled
@@ -135,7 +145,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [settings.areaSquareMeters, settings.notificationsEnabled, mockAdapter]);
+  }, [settings.areaSquareMeters, settings.notificationsEnabled, settings.lastShoveledAt, settings.snowplowPileHeight, settings.carDepartureTime, mockAdapter]);
 
   // Handle location set
   const handleLocationSet = (loc: Location) => {
@@ -211,7 +221,13 @@ function App() {
       setSettings(s => ({ ...s, areaSquareMeters: value }));
       // Recalculate if we have weather
       if (weather) {
-        const rec = generateRecommendation(weather, value, settings.lastShoveledAt);
+        const rec = generateRecommendation(
+          weather,
+          value,
+          settings.lastShoveledAt,
+          settings.snowplowPileHeight,
+          settings.carDepartureTime
+        );
         setRecommendation(rec);
       }
     }
@@ -338,6 +354,89 @@ function App() {
                   max="500"
                 />
                 <span>m²</span>
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <label htmlFor="departure">Morning Car Departure</label>
+              <div className="input-group">
+                <input
+                  type="time"
+                  id="departure"
+                  value={settings.carDepartureTime || ''}
+                  onChange={(e) => {
+                    const newSettings = { ...settings, carDepartureTime: e.target.value || undefined };
+                    setSettings(newSettings);
+                    if (weather) {
+                      const rec = generateRecommendation(
+                        weather,
+                        settings.areaSquareMeters,
+                        settings.lastShoveledAt,
+                        settings.snowplowPileHeight,
+                        e.target.value || undefined
+                      );
+                      setRecommendation(rec);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="setting-row">
+              <label>Snowplow Pile</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {settings.snowplowPileHeight ? (
+                  <>
+                    <span style={{ fontSize: '0.9rem' }}>
+                      {settings.snowplowPileHeight}mm pile reported
+                    </span>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        const newSettings = { ...settings, snowplowPileHeight: undefined };
+                        setSettings(newSettings);
+                        if (weather) {
+                          const rec = generateRecommendation(
+                            weather,
+                            settings.areaSquareMeters,
+                            settings.lastShoveledAt,
+                            undefined,
+                            settings.carDepartureTime
+                          );
+                          setRecommendation(rec);
+                        }
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      const pileHeight = prompt('Enter snowplow pile height in mm:', '50');
+                      if (pileHeight) {
+                        const height = parseInt(pileHeight, 10);
+                        if (!isNaN(height) && height > 0) {
+                          const newSettings = { ...settings, snowplowPileHeight: height };
+                          setSettings(newSettings);
+                          if (weather) {
+                            const rec = generateRecommendation(
+                              weather,
+                              settings.areaSquareMeters,
+                              settings.lastShoveledAt,
+                              height,
+                              settings.carDepartureTime
+                            );
+                            setRecommendation(rec);
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    🚜 Report Pile
+                  </button>
+                )}
               </div>
             </div>
 
