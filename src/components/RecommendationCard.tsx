@@ -63,7 +63,9 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
               })}
             </span>
           </div>
-          <span className="time-label">Optimal shoveling time</span>
+          <span className="time-label">
+            {isForecastBased ? 'Plan to shovel around' : 'Optimal shoveling time'}
+          </span>
         </div>
       )}
 
