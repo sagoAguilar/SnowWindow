@@ -29,8 +29,13 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
     reasoning,
     estimatedMinutes,
     salt,
-    totalAccumulation
+    totalAccumulation,
+    isCurrentlySnowing,
+    snowStartTime
   } = recommendation;
+
+  // Determine if this is a forecast-based recommendation (snow coming but not here yet)
+  const isForecastBased = !isCurrentlySnowing && totalAccumulation > 0 && snowStartTime;
 
   const urgencyStyle = { '--urgency-color': urgencyColors[urgency] } as React.CSSProperties;
 
@@ -58,7 +63,9 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
               })}
             </span>
           </div>
-          <span className="time-label">Optimal shoveling time</span>
+          <span className="time-label">
+            {isForecastBased ? 'Plan to shovel around' : 'Optimal shoveling time'}
+          </span>
         </div>
       )}
 
@@ -67,7 +74,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           <div className="stat">
             <span className="stat-icon">❄️</span>
             <span className="stat-value">{totalAccumulation.toFixed(0)}mm</span>
-            <span className="stat-label">Expected</span>
+            <span className="stat-label">{isForecastBased ? 'Forecasted' : 'Expected'}</span>
           </div>
         )}
 
@@ -79,6 +86,20 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           </div>
         )}
       </div>
+
+      {isForecastBased && snowStartTime && (
+        <div className="forecast-notice">
+          <span className="forecast-icon">📡</span>
+          <span className="forecast-text">
+            Based on forecast — snow expected to start around{' '}
+            {snowStartTime.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            })}
+          </span>
+        </div>
+      )}
 
       <div className="reasoning">
         <h3>Why?</h3>

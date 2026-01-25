@@ -688,6 +688,27 @@ a:hover {
   border-top: 1px dotted rgba(26, 43, 72, 0.2);
 }
 
+.forecast-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: rgba(165, 198, 225, 0.15);
+  border: 1px solid rgba(165, 198, 225, 0.3);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.forecast-icon {
+  font-size: 18px;
+}
+
+.forecast-text {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
 /* --------------------------------------------------------------------------
    Reminder Banner & Shovel Tracking
    -------------------------------------------------------------------------- */
