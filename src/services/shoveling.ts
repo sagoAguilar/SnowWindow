@@ -77,10 +77,16 @@ export function generateRecommendation(
   let futureSolarMelt = 0;
   let snowStopTime: Date | null = null;
   let lastSnowHour: Date | null = null;
+  let snowStartTime: Date | null = null;
 
   for (const hour of next24Hours) {
     futureSnowfall += hour.snowfall;
     futureRain += hour.rain;
+
+    // Track when snow starts (first hour with snowfall in forecast)
+    if (hour.snowfall > 0 && snowStartTime === null) {
+      snowStartTime = hour.time;
+    }
 
     // Track when snow stops
     if (hour.snowfall > 0) {
@@ -412,6 +418,9 @@ export function generateRecommendation(
     reasoning.push("Salt timing: wait for rain to stop before applying.");
   }
 
+  // Determine if it's currently snowing
+  const isCurrentlySnowing = weather.current.snowfall > 0;
+
   return {
     shouldShovel,
     urgency,
@@ -424,6 +433,9 @@ export function generateRecommendation(
     slushWarning,
     blocksDriveway,
     snowplowPileDetected,
+    isCurrentlySnowing,
+    snowStartTime: snowStartTime ?? undefined,
+    snowStopTime: snowStopTime ?? undefined,
   };
 }
 

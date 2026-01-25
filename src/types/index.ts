@@ -62,6 +62,9 @@ export interface ShovelingRecommendation {
   slushWarning?: boolean; // Rain after snow creates slush needing cleanup
   blocksDriveway?: boolean; // Overnight accumulation blocks car access
   snowplowPileDetected?: boolean; // Manual snowplow pile needs clearing
+  isCurrentlySnowing: boolean; // Whether it's actively snowing right now
+  snowStartTime?: Date; // When snow is expected to start (if not currently snowing)
+  snowStopTime?: Date; // When snow is expected to stop
 }
 
 /** User settings */
