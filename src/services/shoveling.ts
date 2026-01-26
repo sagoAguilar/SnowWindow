@@ -198,9 +198,13 @@ export function generateRecommendation(
   }
 
   // Find when temperature will drop below freezing (compaction risk)
-  const freezeTime = next24Hours.find(
-    (h) => h.time > now && h.temperature < COMPACTION_FREEZE_TEMP,
-  )?.time;
+  // Only relevant if currently above freezing - we're looking for when it WILL drop
+  const currentlyBelowFreezing = weather.current.temperature < COMPACTION_FREEZE_TEMP;
+  const freezeTime = currentlyBelowFreezing
+    ? undefined // Already frozen, no need to rush before "freeze"
+    : next24Hours.find(
+        (h) => h.time > now && h.temperature < COMPACTION_FREEZE_TEMP,
+      )?.time;
 
   // Find minimum temperature for salt advice
   const minTemp = Math.min(...next24Hours.map((h) => h.temperature));
@@ -329,8 +333,14 @@ export function generateRecommendation(
       }
 
       // Ensure optimal time isn't in the past
+      // But if still snowing, wait until snow stops rather than saying "now"
       if (optimalTime < now) {
-        optimalTime = now;
+        if (weather.current.snowfall > 0 && snowStopTime && snowStopTime > now) {
+          // Still snowing - recommend shoveling after it stops
+          optimalTime = snowStopTime;
+        } else {
+          optimalTime = now;
+        }
       }
 
       reasoning.push(
