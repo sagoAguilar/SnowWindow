@@ -32,13 +32,13 @@ export function generateRecommendation(
   const reasoning: string[] = [];
 
   // Determine start time for accumulation calculation
-  // If user shoveled recently (within past 24h), start from then
-  // Otherwise, use past 24 hours to capture overnight accumulation
-  const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  // If user shoveled recently (within past 12h), start from then
+  // Otherwise, use past 12 hours to capture overnight accumulation
+  const past12h = new Date(now.getTime() - 12 * 60 * 60 * 1000);
   const accumulationStartTime =
-    lastShoveledAt && lastShoveledAt > past24h
+    lastShoveledAt && lastShoveledAt > past12h
       ? lastShoveledAt
-      : past24h;
+      : past12h;
 
   // Get hours from accumulation start until now (past accumulation)
   const pastHours = weather.hourly.filter((h) => {
@@ -186,13 +186,13 @@ export function generateRecommendation(
     const pastNet = calculateNetAccumulation(pastSnowfall, pastRain, pastSolarMelt);
     const futureNet = calculateNetAccumulation(futureSnowfall, futureRain, futureSolarMelt);
 
-    if (lastShoveledAt && lastShoveledAt > past24h) {
+    if (lastShoveledAt && lastShoveledAt > past12h) {
       reasoning.push(
         `${pastNet.toFixed(1)}mm accumulated since last shoveled, ${futureNet.toFixed(1)}mm expected.`,
       );
     } else {
       reasoning.push(
-        `${pastNet.toFixed(1)}mm accumulated in past 24h, ${futureNet.toFixed(1)}mm expected.`,
+        `${pastNet.toFixed(1)}mm accumulated in past 12h, ${futureNet.toFixed(1)}mm expected.`,
       );
     }
   }
