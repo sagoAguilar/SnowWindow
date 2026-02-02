@@ -309,8 +309,7 @@ function App() {
 
             <RecommendationCard recommendation={recommendation} />
 
-            {recommendation.shouldShovel && (
-              <div className="shovel-tracking card">
+            <div className="shovel-tracking card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     {settings.lastShoveledAt ? (
@@ -331,8 +330,7 @@ function App() {
                     ✓ Mark Shoveled
                   </button>
                 </div>
-              </div>
-            )}
+            </div>
 
             <WeatherDisplay weather={weather} />
           </>
