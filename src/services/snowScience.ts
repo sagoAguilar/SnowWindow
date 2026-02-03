@@ -364,6 +364,135 @@ export function getSaltRecommendation(
 }
 
 // ============================================================================
+// SNOW DENSITY & EFFORT
+// ============================================================================
+
+/**
+ * Snow density values (kg/m³) by snow type.
+ * Fresh light snow can be as low as 50 kg/m³, while wet/packed snow exceeds 400 kg/m³.
+ * Reference: Canadian Avalanche Association, Environment Canada
+ */
+export const SNOW_DENSITY = {
+  /** Very cold, calm conditions: light fluffy powder */
+  lightPowder: 50,
+  /** Cold temps, light wind: normal fresh snow */
+  freshSnow: 100,
+  /** Near freezing or moderate wind: denser snow */
+  denseSnow: 200,
+  /** Wet snow (temp near 0°C) or strong wind: heavy snow */
+  wetHeavy: 350,
+  /** Wind-packed or partially melted/refrozen: very dense */
+  packed: 450,
+  /** Slush (rain mixed with snow) */
+  slush: 500,
+} as const;
+
+/**
+ * Temperature thresholds (°C) affecting snow density.
+ * Warmer temps near freezing produce wetter, denser snow.
+ */
+export const DENSITY_TEMP_THRESHOLDS = {
+  /** Below this: very light powder snow */
+  veryLightPowder: -15,
+  /** Below this: light fluffy snow */
+  lightSnow: -8,
+  /** Below this: normal density snow */
+  normalSnow: -3,
+  /** Above this (up to 0): wet heavy snow */
+  wetSnow: -3,
+} as const;
+
+/**
+ * Calculate snow density based on temperature and wind speed.
+ * Returns density in kg/m³.
+ *
+ * @param tempCelsius - Air temperature during snowfall
+ * @param windSpeedKmh - Wind speed in km/h
+ * @param hasRainMix - Whether rain is mixed with snow (slush conditions)
+ * @returns Estimated snow density in kg/m³
+ */
+export function calculateSnowDensity(
+  tempCelsius: number,
+  windSpeedKmh: number,
+  hasRainMix: boolean = false
+): number {
+  // Slush conditions override other factors
+  if (hasRainMix) {
+    return SNOW_DENSITY.slush;
+  }
+
+  // Base density from temperature
+  let baseDensity: number;
+  if (tempCelsius < DENSITY_TEMP_THRESHOLDS.veryLightPowder) {
+    baseDensity = SNOW_DENSITY.lightPowder;
+  } else if (tempCelsius < DENSITY_TEMP_THRESHOLDS.lightSnow) {
+    baseDensity = SNOW_DENSITY.freshSnow;
+  } else if (tempCelsius < DENSITY_TEMP_THRESHOLDS.normalSnow) {
+    baseDensity = SNOW_DENSITY.denseSnow;
+  } else {
+    // Near or above freezing - wet heavy snow
+    baseDensity = SNOW_DENSITY.wetHeavy;
+  }
+
+  // Wind increases density through compaction
+  let windMultiplier = 1.0;
+  if (windSpeedKmh >= WIND_THRESHOLDS.severe) {
+    windMultiplier = 1.5; // Severe wind significantly packs snow
+  } else if (windSpeedKmh >= WIND_THRESHOLDS.strong) {
+    windMultiplier = 1.3;
+  } else if (windSpeedKmh >= WIND_THRESHOLDS.moderate) {
+    windMultiplier = 1.15;
+  }
+
+  const finalDensity = baseDensity * windMultiplier;
+
+  // Cap at packed snow density
+  return Math.min(finalDensity, SNOW_DENSITY.packed);
+}
+
+/**
+ * Calculate effort multiplier based on snow density.
+ * Dense snow requires significantly more effort to shovel.
+ * Returns a multiplier for estimated shoveling time.
+ *
+ * @param density - Snow density in kg/m³
+ * @returns Effort multiplier (1.0 = baseline, higher = more effort)
+ */
+export function calculateEffortMultiplier(density: number): number {
+  // Baseline: fresh snow at 100 kg/m³ = 1.0x effort
+  // Scale effort with density ratio, but not linearly
+  // Dense snow is disproportionately harder due to weight per shovel load
+
+  const baselineDensity = SNOW_DENSITY.freshSnow;
+  const ratio = density / baselineDensity;
+
+  // Use square root to model diminishing returns on effort increase
+  // but still show significant impact for dense snow
+  // 100 kg/m³ → 1.0x, 200 kg/m³ → 1.4x, 400 kg/m³ → 2.0x, 500 kg/m³ → 2.2x
+  return Math.max(1.0, Math.sqrt(ratio));
+}
+
+/**
+ * Get a human-readable description of snow density/type.
+ *
+ * @param density - Snow density in kg/m³
+ * @returns Description string for UI display
+ */
+export function getSnowTypeDescription(density: number): string {
+  if (density <= SNOW_DENSITY.lightPowder + 25) {
+    return "light powder";
+  } else if (density <= SNOW_DENSITY.freshSnow + 25) {
+    return "fresh snow";
+  } else if (density <= SNOW_DENSITY.denseSnow + 50) {
+    return "dense snow";
+  } else if (density <= SNOW_DENSITY.wetHeavy + 50) {
+    return "wet/heavy snow";
+  } else {
+    return "packed/icy snow";
+  }
+}
+
+// ============================================================================
 // NET ACCUMULATION
 // ============================================================================
 

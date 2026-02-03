@@ -6,13 +6,17 @@ import type {
 } from "../types";
 import {
   adjustShovelWindowForWind,
+  calculateEffortMultiplier,
   calculateManpower,
   calculateNetAccumulation,
+  calculateSnowDensity,
   calculateSolarMelting,
   COMPACTION_FREEZE_TEMP,
   getSaltRecommendation,
+  getSnowTypeDescription,
   OPTIMAL_SHOVEL_WINDOW_HOURS,
   shouldShovelMidStorm,
+  SNOW_DENSITY,
   SNOW_THRESHOLDS,
   WIND_THRESHOLDS,
 } from "./snowScience";
@@ -216,6 +220,38 @@ export function generateRecommendation(
         next24Hours.length
       : 0;
 
+  // Calculate snow density based on conditions during snowfall
+  // Use weighted average of temperature/wind during hours with snowfall
+  const snowHours = [...pastHours, ...next24Hours].filter(h => h.snowfall > 0);
+  let snowDensity: number = SNOW_DENSITY.freshSnow; // Default to fresh snow
+
+  if (snowHours.length > 0) {
+    // Weight by snowfall amount for more accurate density
+    let totalWeight = 0;
+    let weightedDensity = 0;
+
+    for (const hour of snowHours) {
+      const hourDensity = calculateSnowDensity(
+        hour.temperature,
+        hour.windSpeed,
+        hour.rain > 0.5, // Consider rain mix if rain > 0.5mm in same hour
+      );
+      weightedDensity += hourDensity * hour.snowfall;
+      totalWeight += hour.snowfall;
+    }
+
+    if (totalWeight > 0) {
+      snowDensity = weightedDensity / totalWeight;
+    }
+  } else if (slushWarning) {
+    // If slush conditions detected but no specific snow hours, assume dense
+    snowDensity = SNOW_DENSITY.wetHeavy;
+  }
+
+  // Calculate effort multiplier based on density
+  const effortMultiplier = calculateEffortMultiplier(snowDensity);
+  const snowTypeDesc = getSnowTypeDescription(snowDensity);
+
   // Determine urgency and recommendation
   let urgency: UrgencyLevel = "none";
   let shouldShovel = false;
@@ -376,12 +412,23 @@ export function generateRecommendation(
     reasoning.push(`Expected accumulation: ${netAccumulation.toFixed(1)}mm.`);
   }
 
-  // Calculate manpower estimate
-  const estimatedMinutes = shouldShovel
+  // Calculate manpower estimate with density-adjusted effort
+  const baseMinutes = shouldShovel
     ? calculateManpower(areaSquareMeters, netAccumulation)
     : undefined;
 
-  if (estimatedMinutes) {
+  // Apply effort multiplier based on snow density
+  const estimatedMinutes = baseMinutes
+    ? Math.ceil(baseMinutes * effortMultiplier)
+    : undefined;
+
+  if (estimatedMinutes && shouldShovel) {
+    // Add snow type info to reasoning if density is notable
+    if (snowDensity > SNOW_DENSITY.freshSnow + 25) {
+      reasoning.push(
+        `Snow type: ${snowTypeDesc} (~${Math.round(snowDensity)} kg/m³) - ${Math.round((effortMultiplier - 1) * 100)}% more effort required.`,
+      );
+    }
     reasoning.push(
       `Estimated clearing time: ~${estimatedMinutes} minutes for ${areaSquareMeters}m².`,
     );
@@ -446,6 +493,9 @@ export function generateRecommendation(
     isCurrentlySnowing,
     snowStartTime: snowStartTime ?? undefined,
     snowStopTime: snowStopTime ?? undefined,
+    snowDensity,
+    snowType: snowTypeDesc,
+    effortMultiplier,
   };
 }
 

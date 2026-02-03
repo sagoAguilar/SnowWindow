@@ -65,6 +65,9 @@ export interface ShovelingRecommendation {
   isCurrentlySnowing: boolean; // Whether it's actively snowing right now
   snowStartTime?: Date; // When snow is expected to start (if not currently snowing)
   snowStopTime?: Date; // When snow is expected to stop
+  snowDensity?: number; // Estimated snow density in kg/m³
+  snowType?: string; // Human-readable snow type (e.g., "wet/heavy snow")
+  effortMultiplier?: number; // Effort multiplier due to snow density (1.0 = normal)
 }
 
 /** User settings */
