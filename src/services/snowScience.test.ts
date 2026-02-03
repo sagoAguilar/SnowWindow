@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   adjustShovelWindowForWind,
+  calculateEffortMultiplier,
   calculateManpower,
   calculateNetAccumulation,
   calculateRainMelting,
+  calculateSnowDensity,
   calculateSolarMelting,
   calculateWindChill,
   calculateWindCompactionFactor,
   getSaltRecommendation,
+  getSnowTypeDescription,
   RAIN_SNOW_MELT_RATIO,
   shouldShovelMidStorm,
+  SNOW_DENSITY,
   SNOW_THRESHOLDS,
 } from "./snowScience";
 
@@ -173,6 +177,106 @@ describe("Snow Science Knowledge Base", () => {
     it("should never go below 0.5 hours", () => {
       const adjusted = adjustShovelWindowForWind(2, 100);
       expect(adjusted).toBeGreaterThanOrEqual(0.5);
+    });
+  });
+
+  describe("calculateSnowDensity", () => {
+    it("should return light powder for very cold temps", () => {
+      const density = calculateSnowDensity(-20, 5);
+      expect(density).toBe(SNOW_DENSITY.lightPowder);
+    });
+
+    it("should return fresh snow for cold temps", () => {
+      const density = calculateSnowDensity(-10, 5);
+      expect(density).toBe(SNOW_DENSITY.freshSnow);
+    });
+
+    it("should return dense snow for moderate cold temps", () => {
+      const density = calculateSnowDensity(-5, 5);
+      expect(density).toBe(SNOW_DENSITY.denseSnow);
+    });
+
+    it("should return wet heavy snow near freezing", () => {
+      const density = calculateSnowDensity(-1, 5);
+      expect(density).toBe(SNOW_DENSITY.wetHeavy);
+    });
+
+    it("should increase density with strong wind", () => {
+      const calmDensity = calculateSnowDensity(-10, 5);
+      const windyDensity = calculateSnowDensity(-10, 50);
+      expect(windyDensity).toBeGreaterThan(calmDensity);
+    });
+
+    it("should return slush density when rain is mixed", () => {
+      const density = calculateSnowDensity(-5, 10, true);
+      expect(density).toBe(SNOW_DENSITY.slush);
+    });
+
+    it("should cap density at packed snow level", () => {
+      // Very windy wet snow shouldn't exceed packed density
+      const density = calculateSnowDensity(-1, 80);
+      expect(density).toBeLessThanOrEqual(SNOW_DENSITY.packed);
+    });
+
+    it("should calculate Bedford-like conditions (near freezing + high wind)", () => {
+      // Bedford, NS scenario: ~-2°C with 70-80 km/h wind
+      const density = calculateSnowDensity(-2, 75);
+      // Should be wet/heavy (350) * 1.5 wind factor = 525, capped at 450
+      expect(density).toBe(SNOW_DENSITY.packed);
+    });
+  });
+
+  describe("calculateEffortMultiplier", () => {
+    it("should return 1.0 for fresh snow baseline", () => {
+      const multiplier = calculateEffortMultiplier(SNOW_DENSITY.freshSnow);
+      expect(multiplier).toBe(1);
+    });
+
+    it("should return ~1.4 for dense snow (200 kg/m³)", () => {
+      const multiplier = calculateEffortMultiplier(SNOW_DENSITY.denseSnow);
+      expect(multiplier).toBeCloseTo(1.41, 1); // sqrt(2) ≈ 1.41
+    });
+
+    it("should return ~2.0 for very dense snow (400 kg/m³)", () => {
+      const multiplier = calculateEffortMultiplier(400);
+      expect(multiplier).toBeCloseTo(2.0, 1);
+    });
+
+    it("should never return less than 1.0", () => {
+      const multiplier = calculateEffortMultiplier(SNOW_DENSITY.lightPowder);
+      expect(multiplier).toBeGreaterThanOrEqual(1.0);
+    });
+
+    it("should show significant increase for packed snow", () => {
+      const multiplier = calculateEffortMultiplier(SNOW_DENSITY.packed);
+      expect(multiplier).toBeGreaterThan(2.0);
+    });
+  });
+
+  describe("getSnowTypeDescription", () => {
+    it("should describe light powder", () => {
+      const desc = getSnowTypeDescription(SNOW_DENSITY.lightPowder);
+      expect(desc).toBe("light powder");
+    });
+
+    it("should describe fresh snow", () => {
+      const desc = getSnowTypeDescription(SNOW_DENSITY.freshSnow);
+      expect(desc).toBe("fresh snow");
+    });
+
+    it("should describe dense snow", () => {
+      const desc = getSnowTypeDescription(SNOW_DENSITY.denseSnow);
+      expect(desc).toBe("dense snow");
+    });
+
+    it("should describe wet/heavy snow", () => {
+      const desc = getSnowTypeDescription(SNOW_DENSITY.wetHeavy);
+      expect(desc).toBe("wet/heavy snow");
+    });
+
+    it("should describe packed/icy snow", () => {
+      const desc = getSnowTypeDescription(SNOW_DENSITY.packed);
+      expect(desc).toBe("packed/icy snow");
     });
   });
 });
