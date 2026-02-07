@@ -5,7 +5,7 @@ interface WeatherDisplayProps {
 }
 
 export function WeatherDisplay({ weather }: WeatherDisplayProps) {
-  const { current, hourly } = weather;
+  const { current, hourly, location } = weather;
 
   // Get next 12 hours for mini forecast
   const next12Hours = hourly.slice(0, 12);
@@ -18,6 +18,17 @@ export function WeatherDisplay({ weather }: WeatherDisplayProps) {
         <span className="weather-icon">{current.isDay ? '☀️' : '🌙'}</span>
         <h2>Current Weather</h2>
       </div>
+
+      {location && (
+        <div className="weather-location">
+          {location.name && (
+            <p className="weather-location-name">{location.name}</p>
+          )}
+          <p className="weather-location-coords">
+            {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+          </p>
+        </div>
+      )}
 
       <div className="weather-current">
         <div className="temp-display">
@@ -44,33 +55,31 @@ export function WeatherDisplay({ weather }: WeatherDisplayProps) {
         </div>
       </div>
 
-      {totalSnowNext12h > 0 && (
-        <div className="snow-forecast">
-          <h3>❄️ Snow Forecast (12h)</h3>
-          <div className="snow-total">
-            <span className="snow-value">{totalSnowNext12h.toFixed(1)}</span>
-            <span className="snow-unit">mm expected</span>
-          </div>
-
-          <div className="hourly-forecast">
-            {next12Hours.map((hour, i) => (
-              <div
-                key={i}
-                className={`hourly-bar ${hour.snowfall > 0 ? 'has-snow' : ''}`}
-                title={`${hour.time.toLocaleTimeString('en-US', { hour: 'numeric' })}: ${hour.snowfall.toFixed(1)}mm`}
-              >
-                <div
-                  className="bar-fill"
-                  style={{ height: `${Math.min(100, hour.snowfall * 10)}%` }}
-                />
-                <span className="bar-label">
-                  {hour.time.toLocaleTimeString('en-US', { hour: 'numeric' })}
-                </span>
-              </div>
-            ))}
-          </div>
+      <div className="snow-forecast">
+        <h3>❄️ Snow Forecast (12h)</h3>
+        <div className="snow-total">
+          <span className="snow-value">{totalSnowNext12h.toFixed(1)}</span>
+          <span className="snow-unit">mm expected</span>
         </div>
-      )}
+
+        <div className="hourly-forecast">
+          {next12Hours.map((hour, i) => (
+            <div
+              key={i}
+              className={`hourly-bar ${hour.snowfall > 0 ? 'has-snow' : ''}`}
+              title={`${hour.time.toLocaleTimeString('en-US', { hour: 'numeric' })}: ${hour.snowfall.toFixed(1)}mm`}
+            >
+              <div
+                className="bar-fill"
+                style={{ height: `${Math.min(100, hour.snowfall * 10)}%` }}
+              />
+              <span className="bar-label">
+                {hour.time.toLocaleTimeString('en-US', { hour: 'numeric' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

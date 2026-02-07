@@ -117,6 +117,10 @@ function App() {
     try {
       const adapter = useMock ? mockAdapter : weatherAdapter;
       const data = await adapter.fetchWeather(loc);
+      // Carry the location name through to weather data
+      if (loc.name) {
+        data.location.name = loc.name;
+      }
       setWeather(data);
 
       // Generate recommendation

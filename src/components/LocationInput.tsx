@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getCurrentLocation } from '../services/geolocation';
+import { getCurrentLocation, reverseGeocode } from '../services/geolocation';
 import type { Location } from '../types';
 
 interface LocationInputProps {
@@ -24,9 +24,10 @@ export function LocationInput({ onLocationSet, currentLocation, isLoading }: Loc
 
     try {
       const coords = await getCurrentLocation();
+      const locationName = await reverseGeocode(coords);
       onLocationSet({
         ...coords,
-        name: 'Current Location'
+        name: locationName || 'Current Location'
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get location');
@@ -35,7 +36,7 @@ export function LocationInput({ onLocationSet, currentLocation, isLoading }: Loc
     }
   };
 
-  const handleManualSubmit = () => {
+  const handleManualSubmit = async () => {
     const lat = parseFloat(manualLat);
     const lng = parseFloat(manualLng);
 
@@ -48,10 +49,11 @@ export function LocationInput({ onLocationSet, currentLocation, isLoading }: Loc
       return;
     }
 
+    const coords = { latitude: lat, longitude: lng };
+    const locationName = await reverseGeocode(coords);
     onLocationSet({
-      latitude: lat,
-      longitude: lng,
-      name: 'Manual Location',
+      ...coords,
+      name: locationName || 'Manual Location',
     });
     setError(null);
   };

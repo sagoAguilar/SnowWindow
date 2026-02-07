@@ -1,6 +1,45 @@
 import type { Coordinates } from "../types";
 
 /**
+ * Reverse geocode coordinates to a human-readable place name.
+ * Uses the Nominatim (OpenStreetMap) API.
+ */
+export async function reverseGeocode(coords: Coordinates): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&zoom=14`,
+      {
+        headers: {
+          "Accept-Language": "en",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      return "";
+    }
+
+    const data = await response.json();
+
+    // Build a concise name from address components
+    const addr = data.address;
+    if (!addr) return data.display_name || "";
+
+    const city =
+      addr.city || addr.town || addr.village || addr.hamlet || addr.suburb || "";
+    const state = addr.state || addr.region || "";
+    const country = addr.country || "";
+
+    if (city && state) return `${city}, ${state}`;
+    if (city && country) return `${city}, ${country}`;
+    if (state && country) return `${state}, ${country}`;
+    return data.display_name || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Get user's current location using browser geolocation.
  * Returns a promise that resolves to coordinates or rejects with an error.
  */
