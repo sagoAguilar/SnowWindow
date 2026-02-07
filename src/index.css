@@ -365,6 +365,25 @@ a:hover {
 /* --------------------------------------------------------------------------
    Weather Display
    -------------------------------------------------------------------------- */
+.weather-location {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border-glass);
+}
+
+.weather-location-name {
+  font-weight: 600;
+  font-size: var(--text-h2-size);
+  color: var(--color-primary-dark);
+  margin-bottom: 2px;
+}
+
+.weather-location-coords {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-family: monospace;
+}
+
 .weather-current {
   display: flex;
   align-items: center;
