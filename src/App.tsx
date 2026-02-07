@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ClothingSuggestion } from './components/ClothingSuggestion';
 import { DevSandbox } from './components/DevSandbox';
 import { DynamicBackground } from './components/DynamicBackground';
 import { LocationInput } from './components/LocationInput';
@@ -11,10 +12,11 @@ import {
   scheduleNotification
 } from './services/notifications';
 import { PRESET_SCENARIOS } from './services/scenarios';
+import { generateClothingSuggestion } from './services/clothing';
 import { generateRecommendation } from './services/shoveling';
 import { weatherAdapter } from './services/weather';
 import { MockWeatherAdapter, type MockWeatherParams } from './services/weather/mockWeather';
-import type { Location, ShovelingRecommendation, UserSettings, WeatherData } from './types';
+import type { ClothingSuggestion as ClothingSuggestionType, Location, ShovelingRecommendation, UserSettings, WeatherData } from './types';
 
 const DEFAULT_SETTINGS: UserSettings = {
   areaSquareMeters: 50,
@@ -90,6 +92,8 @@ function App() {
   const [location, setLocation] = useState<Location | null>(() => loadLocation());
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [recommendation, setRecommendation] = useState<ShovelingRecommendation | null>(null);
+  const [clothingSuggestion, setClothingSuggestion] = useState<ClothingSuggestionType | null>(null);
+  const [shovelingClothing, setShovelingClothing] = useState<ClothingSuggestionType | null>(null);
   const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +126,10 @@ function App() {
         data.location.name = loc.name;
       }
       setWeather(data);
+
+      // Generate clothing suggestions (general + shoveling)
+      setClothingSuggestion(generateClothingSuggestion(data));
+      setShovelingClothing(generateClothingSuggestion(data, true));
 
       // Generate recommendation
       const rec = generateRecommendation(
@@ -312,6 +320,14 @@ function App() {
             )}
 
             <RecommendationCard recommendation={recommendation} />
+
+            {recommendation.shouldShovel && shovelingClothing && (
+              <ClothingSuggestion suggestion={shovelingClothing} forShoveling />
+            )}
+
+            {clothingSuggestion && (
+              <ClothingSuggestion suggestion={clothingSuggestion} />
+            )}
 
             <div className="shovel-tracking card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
