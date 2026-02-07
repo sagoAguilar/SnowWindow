@@ -20,7 +20,7 @@ function makeWeather(overrides: Partial<WeatherData['current']> = {}): WeatherDa
   };
 }
 
-describe('generateClothingSuggestion', () => {
+describe('generateClothingSuggestion — general', () => {
   it('should suggest heavy gear for extreme cold', () => {
     const weather = makeWeather({ temperature: -20, windSpeed: 30 });
     const result = generateClothingSuggestion(weather);
@@ -56,7 +56,6 @@ describe('generateClothingSuggestion', () => {
 
     expect(result.summary).toContain('Mild');
     expect(result.items.find(i => i.zone === 'torso')?.label).toContain('Light jacket');
-    // No gloves, hat, etc. needed
     expect(result.items.find(i => i.zone === 'hands')).toBeUndefined();
     expect(result.items.find(i => i.zone === 'head')).toBeUndefined();
   });
@@ -112,5 +111,84 @@ describe('generateClothingSuggestion', () => {
     const result = generateClothingSuggestion(weather);
 
     expect(result.items.find(i => i.zone === 'legs')?.label).toContain('Water-resistant');
+  });
+});
+
+describe('generateClothingSuggestion — shoveling mode', () => {
+  it('should suggest lighter torso layers than general at same temperature', () => {
+    // At -5°C / 10km/h: feelsLike ~= -9°C (between -15 and -5 → "Insulated winter jacket")
+    // Shoveling coreFeelsLike ~= -1°C (between -5 and 5 → "Light fleece")
+    const weather = makeWeather({ temperature: -5, windSpeed: 10 });
+    const general = generateClothingSuggestion(weather);
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    const generalTorso = general.items.find(i => i.zone === 'torso')!;
+    const shovelingTorso = shoveling.items.find(i => i.zone === 'torso')!;
+
+    expect(generalTorso.label).toContain('Insulated winter jacket');
+    expect(shovelingTorso.label).toContain('Light fleece');
+  });
+
+  it('should keep same extremity protection (hands/feet) as general', () => {
+    const weather = makeWeather({ temperature: -5, windSpeed: 10 });
+    const general = generateClothingSuggestion(weather);
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    // Feet should be identical — extremities don't benefit from core heat
+    const generalFeet = general.items.find(i => i.zone === 'feet')!;
+    const shovelingFeet = shoveling.items.find(i => i.zone === 'feet')!;
+    expect(shovelingFeet.label).toBe(generalFeet.label);
+  });
+
+  it('should suggest work gloves instead of mittens for shoveling', () => {
+    const weather = makeWeather({ temperature: -20, windSpeed: 30 });
+    const general = generateClothingSuggestion(weather);
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    expect(general.items.find(i => i.zone === 'hands')?.label).toContain('mittens');
+    expect(shoveling.items.find(i => i.zone === 'hands')?.label).toContain('work gloves');
+  });
+
+  it('should warn about overdressing when activity will generate heat', () => {
+    // At -5°C with 10 km/h wind: feelsLike ~= -5, coreFeelsLike ~= +3 (> 0)
+    const weather = makeWeather({ temperature: -3, windSpeed: 10 });
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    expect(shoveling.warnings.some(w => w.includes('overdressing') || w.includes('warm up quickly'))).toBe(true);
+  });
+
+  it('should have shoveling-specific summary', () => {
+    const weather = makeWeather({ temperature: -3, windSpeed: 10 });
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    expect(shoveling.summary).toContain('shoveling');
+  });
+
+  it('should still suggest full gear for extreme cold even when shoveling', () => {
+    const weather = makeWeather({ temperature: -30, windSpeed: 40 });
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    // Even with +8 offset, coreFeelsLike is still very cold
+    expect(shoveling.items.find(i => i.zone === 'torso')?.label).toContain('Insulated jacket');
+    expect(shoveling.items.find(i => i.zone === 'head')).toBeDefined();
+    expect(shoveling.items.find(i => i.zone === 'face')?.label).toContain('Face mask');
+    expect(shoveling.warnings.some(w => w.includes('frostbite') || w.includes('breaks'))).toBe(true);
+  });
+
+  it('should suggest light breathable layer for mild shoveling conditions', () => {
+    const weather = makeWeather({ temperature: 3, windSpeed: 5 });
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    // coreFeelsLike = 3 + 8 = 11, so "mild shoveling"
+    expect(shoveling.summary).toContain('Mild shoveling');
+    expect(shoveling.items.find(i => i.zone === 'torso')?.label).toContain('breathable');
+  });
+
+  it('should still add waterproof outer when snowing during shoveling', () => {
+    const weather = makeWeather({ temperature: -5, windSpeed: 15, snowfall: 5 });
+    const shoveling = generateClothingSuggestion(weather, true);
+
+    const torso = shoveling.items.find(i => i.zone === 'torso');
+    expect(torso?.label).toContain('waterproof outer');
   });
 });

@@ -93,6 +93,7 @@ function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [recommendation, setRecommendation] = useState<ShovelingRecommendation | null>(null);
   const [clothingSuggestion, setClothingSuggestion] = useState<ClothingSuggestionType | null>(null);
+  const [shovelingClothing, setShovelingClothing] = useState<ClothingSuggestionType | null>(null);
   const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,8 +127,9 @@ function App() {
       }
       setWeather(data);
 
-      // Generate clothing suggestion
+      // Generate clothing suggestions (general + shoveling)
       setClothingSuggestion(generateClothingSuggestion(data));
+      setShovelingClothing(generateClothingSuggestion(data, true));
 
       // Generate recommendation
       const rec = generateRecommendation(
@@ -318,6 +320,10 @@ function App() {
             )}
 
             <RecommendationCard recommendation={recommendation} />
+
+            {recommendation.shouldShovel && shovelingClothing && (
+              <ClothingSuggestion suggestion={shovelingClothing} forShoveling />
+            )}
 
             {clothingSuggestion && (
               <ClothingSuggestion suggestion={clothingSuggestion} />

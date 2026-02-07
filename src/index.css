@@ -959,6 +959,10 @@ a:hover {
   background: var(--color-secondary-blue);
 }
 
+.clothing-shoveling::after {
+  background: var(--color-primary-action);
+}
+
 .clothing-header {
   display: flex;
   gap: var(--space-md);

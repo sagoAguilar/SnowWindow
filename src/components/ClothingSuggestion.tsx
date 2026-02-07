@@ -2,17 +2,18 @@ import type { ClothingSuggestion as ClothingSuggestionType } from '../types';
 
 interface ClothingSuggestionProps {
   suggestion: ClothingSuggestionType;
+  forShoveling?: boolean;
 }
 
-export function ClothingSuggestion({ suggestion }: ClothingSuggestionProps) {
+export function ClothingSuggestion({ suggestion, forShoveling = false }: ClothingSuggestionProps) {
   const { summary, feelsLike, items, warnings } = suggestion;
 
   return (
-    <div className="clothing-suggestion card">
+    <div className={`clothing-suggestion card${forShoveling ? ' clothing-shoveling' : ''}`}>
       <div className="clothing-header">
-        <span className="clothing-header-icon">🧥</span>
+        <span className="clothing-header-icon">{forShoveling ? '🚿' : '🧥'}</span>
         <div>
-          <h3>What to Wear Outside</h3>
+          <h3>{forShoveling ? 'What to Wear for Shoveling' : 'What to Wear Outside'}</h3>
           <p className="clothing-summary">{summary}</p>
         </div>
       </div>
