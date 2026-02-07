@@ -942,6 +942,130 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Clothing Suggestion
+   -------------------------------------------------------------------------- */
+.clothing-suggestion {
+  position: relative;
+  overflow: hidden;
+}
+
+.clothing-suggestion::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--color-secondary-blue);
+}
+
+.clothing-header {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.clothing-header-icon {
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.clothing-header h3 {
+  font-size: var(--text-h2-size);
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  margin-bottom: 2px;
+}
+
+.clothing-summary {
+  font-size: var(--text-body-size);
+  color: var(--color-text-secondary);
+}
+
+.clothing-feels-like {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--space-md);
+  width: fit-content;
+}
+
+.feels-like-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.feels-like-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.clothing-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.clothing-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--text-body-size);
+  color: var(--color-text-primary);
+}
+
+.clothing-item-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.clothing-item-label {
+  color: var(--color-primary-dark);
+}
+
+.clothing-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.clothing-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.clothing-warning-icon {
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
    Utilities
    -------------------------------------------------------------------------- */
 .text-muted {

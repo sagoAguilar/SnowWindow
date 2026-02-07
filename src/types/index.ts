@@ -79,6 +79,21 @@ export interface UserSettings {
   carDepartureTime?: string; // Morning departure time in HH:MM format (e.g., "07:00")
 }
 
+/** Clothing suggestion for a body zone */
+export interface ClothingItem {
+  zone: 'head' | 'face' | 'torso' | 'hands' | 'legs' | 'feet';
+  label: string;
+  icon: string;
+}
+
+/** Full clothing suggestion based on weather */
+export interface ClothingSuggestion {
+  summary: string;
+  feelsLike: number;
+  items: ClothingItem[];
+  warnings: string[];
+}
+
 /** App state */
 export interface AppState {
   location: Location | null;
