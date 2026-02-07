@@ -35,10 +35,13 @@ export function generateClothingSuggestion(
 
   // --- Head ---
   // Shoveling: still need head protection, but use core offset (head warms up with activity)
+  // Wind: strong wind strips heat from head/ears — suggest hat even in milder temps
   if (coreFeelsLike < -15) {
     items.push({ zone: 'head', label: 'Insulated winter hat or balaclava', icon: '🧶' });
-  } else if (coreFeelsLike < 5) {
-    items.push({ zone: 'head', label: 'Warm beanie or winter hat', icon: '🧢' });
+  } else if (coreFeelsLike < 5 || isWindy) {
+    items.push({ zone: 'head', label: isVeryWindy
+      ? 'Snug-fitting beanie that covers ears'
+      : 'Warm beanie or winter hat', icon: '🧢' });
   }
 
   // --- Face / Neck ---
@@ -68,20 +71,25 @@ export function generateClothingSuggestion(
       : 'Light jacket or windbreaker', icon: '🧥' });
   }
 
-  // Waterproof note
-  if (isWet) {
-    const outerItem = items.find(i => i.zone === 'torso');
-    if (outerItem) {
+  // Windproof / waterproof modifiers on torso
+  const outerItem = items.find(i => i.zone === 'torso');
+  if (outerItem) {
+    if (isWet && isWindy) {
+      outerItem.label += ' (windproof + waterproof outer)';
+    } else if (isWet) {
       outerItem.label += ' (waterproof outer)';
+    } else if (isWindy) {
+      outerItem.label += ' (windproof outer)';
     }
   }
 
   // --- Hands (always use real feelsLike — extremities don't benefit from core heat) ---
-  if (feelsLike < -15) {
+  // Wind accelerates heat loss from fingers — upgrade glove tier when very windy
+  if (feelsLike < -15 || (feelsLike < 0 && isVeryWindy)) {
     items.push({ zone: 'hands', label: forShoveling
       ? 'Insulated waterproof work gloves'
       : 'Insulated mittens or ski gloves', icon: '🧤' });
-  } else if (feelsLike < 0) {
+  } else if (feelsLike < 0 || (feelsLike < 5 && isWindy)) {
     items.push({ zone: 'hands', label: forShoveling
       ? 'Waterproof winter work gloves'
       : 'Winter gloves', icon: '🧤' });
@@ -93,6 +101,7 @@ export function generateClothingSuggestion(
 
   // --- Legs ---
   // Shoveling: use core offset for legs too (large muscle groups generate heat)
+  // Wind: strong wind cuts through regular pants — suggest wind-resistant even without precipitation
   if (coreFeelsLike < -15) {
     items.push({ zone: 'legs', label: forShoveling
       ? 'Insulated waterproof snow pants'
@@ -101,8 +110,8 @@ export function generateClothingSuggestion(
     items.push({ zone: 'legs', label: forShoveling
       ? 'Water-resistant athletic pants'
       : 'Snow pants or insulated trousers', icon: '👖' });
-  } else if (coreFeelsLike < 5 && isWet) {
-    items.push({ zone: 'legs', label: 'Water-resistant pants', icon: '👖' });
+  } else if (coreFeelsLike < 5 && (isWet || isWindy)) {
+    items.push({ zone: 'legs', label: 'Wind-resistant pants', icon: '👖' });
   }
 
   // --- Feet (always use real feelsLike — feet stay cold regardless of activity) ---

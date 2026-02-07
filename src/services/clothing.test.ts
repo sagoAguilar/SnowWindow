@@ -110,7 +110,65 @@ describe('generateClothingSuggestion — general', () => {
     const weather = makeWeather({ temperature: 2, windSpeed: 5, snowfall: 3 });
     const result = generateClothingSuggestion(weather);
 
-    expect(result.items.find(i => i.zone === 'legs')?.label).toContain('Water-resistant');
+    expect(result.items.find(i => i.zone === 'legs')?.label).toContain('Wind-resistant');
+  });
+
+  it('should add windproof outer on torso when windy without precipitation', () => {
+    const weather = makeWeather({ temperature: 2, windSpeed: 30 });
+    const result = generateClothingSuggestion(weather);
+
+    const torso = result.items.find(i => i.zone === 'torso');
+    expect(torso?.label).toContain('windproof');
+  });
+
+  it('should add windproof + waterproof outer when windy and snowing', () => {
+    const weather = makeWeather({ temperature: -3, windSpeed: 30, snowfall: 5 });
+    const result = generateClothingSuggestion(weather);
+
+    const torso = result.items.find(i => i.zone === 'torso');
+    expect(torso?.label).toContain('windproof');
+    expect(torso?.label).toContain('waterproof');
+  });
+
+  it('should suggest wind-resistant pants when windy even without snow', () => {
+    const weather = makeWeather({ temperature: 2, windSpeed: 30 });
+    const result = generateClothingSuggestion(weather);
+
+    expect(result.items.find(i => i.zone === 'legs')?.label).toContain('Wind-resistant');
+  });
+
+  it('should upgrade gloves when very windy even at moderate cold', () => {
+    // At -3°C / 45 km/h: feelsLike ~= -10°C (between -15 and 0)
+    // Without very windy: would get "Winter gloves"
+    // With very windy (≥40): should upgrade to insulated mittens/gloves
+    const weather = makeWeather({ temperature: -3, windSpeed: 45 });
+    const result = generateClothingSuggestion(weather);
+
+    expect(result.items.find(i => i.zone === 'hands')?.label).toContain('Insulated');
+  });
+
+  it('should suggest hat when windy even in mild temperatures', () => {
+    // 8°C normally wouldn't need a hat, but 30 km/h wind should trigger one
+    const weather = makeWeather({ temperature: 8, windSpeed: 30 });
+    const result = generateClothingSuggestion(weather);
+
+    expect(result.items.find(i => i.zone === 'head')).toBeDefined();
+  });
+
+  it('should suggest snug ear-covering beanie when very windy', () => {
+    const weather = makeWeather({ temperature: 5, windSpeed: 45 });
+    const result = generateClothingSuggestion(weather);
+
+    expect(result.items.find(i => i.zone === 'head')?.label).toContain('covers ears');
+  });
+
+  it('should upgrade gloves from light to winter when windy at mild temp', () => {
+    // At 3°C / 30 km/h: feelsLike ~= 3 (wind chill formula not valid above 10°C but
+    // wind is ≥25, so isWindy=true → should upgrade from "Light gloves" to "Winter gloves"
+    const weather = makeWeather({ temperature: 3, windSpeed: 30 });
+    const result = generateClothingSuggestion(weather);
+
+    expect(result.items.find(i => i.zone === 'hands')?.label).toContain('Winter gloves');
   });
 });
 
