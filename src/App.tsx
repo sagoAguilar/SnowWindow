@@ -321,14 +321,6 @@ function App() {
 
             <RecommendationCard recommendation={recommendation} />
 
-            {recommendation.shouldShovel && shovelingClothing && (
-              <ClothingSuggestion suggestion={shovelingClothing} forShoveling />
-            )}
-
-            {clothingSuggestion && (
-              <ClothingSuggestion suggestion={clothingSuggestion} />
-            )}
-
             <div className="shovel-tracking card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
@@ -347,10 +339,18 @@ function App() {
                     onClick={handleMarkShoveled}
                     style={{ whiteSpace: 'nowrap' }}
                   >
-                    ✓ Mark Shoveled
+                    All Done! Shoveling Complete
                   </button>
                 </div>
             </div>
+
+            {recommendation.shouldShovel && shovelingClothing && (
+              <ClothingSuggestion suggestion={shovelingClothing} forShoveling />
+            )}
+
+            {clothingSuggestion && (
+              <ClothingSuggestion suggestion={clothingSuggestion} />
+            )}
 
             <WeatherDisplay weather={weather} />
           </>
