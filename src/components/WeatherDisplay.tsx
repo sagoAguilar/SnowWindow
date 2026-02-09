@@ -52,6 +52,11 @@ export function WeatherDisplay({ weather }: WeatherDisplayProps) {
             <span className="detail-label">Clouds</span>
             <span className="detail-value">{current.cloudCover}%</span>
           </div>
+          <div className="weather-detail">
+            <span className="detail-icon">💨</span>
+            <span className="detail-label">Wind</span>
+            <span className="detail-value">{current.windSpeed.toFixed(0)} km/h</span>
+          </div>
         </div>
       </div>
 
