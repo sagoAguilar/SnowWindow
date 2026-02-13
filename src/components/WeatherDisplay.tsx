@@ -7,8 +7,12 @@ interface WeatherDisplayProps {
 export function WeatherDisplay({ weather }: WeatherDisplayProps) {
   const { current, hourly, location } = weather;
 
-  // Get next 12 hours for mini forecast
-  const next12Hours = hourly.slice(0, 12);
+  // Get next 12 hours for mini forecast (filter from current time forward)
+  const now = new Date();
+  const next12Hours = hourly.filter((h) => {
+    const hoursDiff = (h.time.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursDiff >= 0 && hoursDiff <= 12;
+  });
 
   const totalSnowNext12h = next12Hours.reduce((sum, h) => sum + h.snowfall, 0);
 
